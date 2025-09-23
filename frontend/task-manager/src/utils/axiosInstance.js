@@ -1,9 +1,11 @@
 import axios from "axios";
 import { BASE_URL } from "./apiPaths";
+import Cookies from "js-cookie";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
+  withCredentials: true, // Send cookies with requests
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -13,7 +15,7 @@ const axiosInstance = axios.create({
 // Request Interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem("token");
+    const accessToken = Cookies.get("token");
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
@@ -33,8 +35,10 @@ axiosInstance.interceptors.response.use(
     // Handle common errors globally
     if (error.response) {
       if (error.response.status === 401) {
-        // Redirect to login page
-        window.location.href = "/login";
+        // Only redirect to login if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = "/login";
+        }
       } else if (error.response.status === 500) {
         console.error("Server error. Please try again later.");
       }

@@ -18,7 +18,7 @@ const Input = ({ value, onChange, label, placeholder, type }) => {
           }
           placeholder={placeholder}
           className="w-full bg-transparent outline-none"
-          value={value}
+          value={value ?? ""}
           onChange={(e) => onChange(e)}
         />
 

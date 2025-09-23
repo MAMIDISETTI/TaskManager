@@ -12,6 +12,13 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
 
+  // Clear error when user starts typing
+  const clearError = () => {
+    if (error) {
+      setError(null);
+    }
+  };
+
   const {updateUser} = useContext(UserContext)
   const navigate = useNavigate();
 
@@ -41,19 +48,29 @@ const Login = () => {
       const { token, role } = response.data;
 
       if (token) {
-        localStorage.setItem("token", token);
         updateUser(response.data)
 
         //Redirect based on role
-        if (role === "admin") {
+        if (role === "master_trainer") {
+          navigate("/master-trainer/dashboard");
+        } else if (role === "boa") {
+          navigate("/boa/dashboard");
+        } else if (role === "trainer") {
+          navigate("/trainer/dashboard");
+        } else if (role === "trainee") {
+          navigate("/trainee/dashboard");
+        } else if (role === "admin") {
           navigate("/admin/dashboard");
         } else {
           navigate("/user/dashboard");
         }
       }
     } catch (error){
-      if (error.response && error.response.data.message) {
+      // console.log("Login error:", error);
+      if (error.response && error.response.data && error.response.data.message) {
         setError(error.response.data.message);
+      } else if (error.response && error.response.status === 401) {
+        setError("Invalid email or password");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -72,7 +89,10 @@ const Login = () => {
       {/* Email Input */}
       <Input
         value={email}
-        onChange={({ target }) => setEmail(target.value)}
+        onChange={({ target }) => {
+          setEmail(target.value);
+          clearError();
+        }}
         label="Email Address"
         placeholder="you@example.com"
         type="text"
@@ -82,7 +102,10 @@ const Login = () => {
       {/* Password Input */}
       <Input
         value={password}
-        onChange={({ target }) => setPassword(target.value)}
+        onChange={({ target }) => {
+          setPassword(target.value);
+          clearError();
+        }}
         label="Password"
         placeholder="••••••••"
         type="password"
