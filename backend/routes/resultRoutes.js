@@ -19,6 +19,7 @@ router.use(protect);
 
 // Results Management Routes
 router.get("/", requireRoles(["master_trainer", "boa", "trainer"]), getResults); // Get all results
+router.get("/my-results", requireRoles(["trainee"]), getResults); // Get trainee's own results
 router.get("/statistics", requireRoles(["master_trainer", "boa"]), getExamStatistics); // Get exam statistics
 router.get("/debug-user/:authorId", requireRoles(["master_trainer", "boa"]), debugUserExams); // Debug user exams
 router.get("/:id", requireRoles(["master_trainer", "boa", "trainer"]), getResultById); // Get result by ID

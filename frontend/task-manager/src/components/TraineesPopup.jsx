@@ -1,35 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LuX, LuSearch, LuClock, LuUser, LuMail, LuIdCard, LuUserCheck } from 'react-icons/lu';
 import moment from 'moment';
 
 const TraineesPopup = ({ isOpen, onClose, trainees = [], title = "Total Trainees", showAssignmentStatus = true }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredTrainees, setFilteredTrainees] = useState([]);
 
   // Debug logging
   console.log("TraineesPopup - isOpen:", isOpen, "trainees:", trainees, "title:", title);
 
-  // Filter trainees based on search term
-  useEffect(() => {
+  // Filter trainees based on search term - use useMemo to prevent infinite loops
+  const filteredTrainees = useMemo(() => {
     if (!searchTerm.trim()) {
-      setFilteredTrainees(trainees);
-    } else {
-      const filtered = trainees.filter(trainee => 
-        trainee.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trainee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trainee.employeeId?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredTrainees(filtered);
+      return trainees;
     }
+    return trainees.filter(trainee => 
+      trainee.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainee.employeeId?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [searchTerm, trainees]);
 
-  // Reset search when popup opens/closes
+  // Reset search when popup opens
   useEffect(() => {
     if (isOpen) {
       setSearchTerm('');
-      setFilteredTrainees(trainees);
     }
-  }, [isOpen, trainees]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

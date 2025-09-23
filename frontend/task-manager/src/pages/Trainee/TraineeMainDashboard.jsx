@@ -4,7 +4,6 @@ import {
   LuCalendar, 
   LuCheck, 
   LuVideo, 
-  LuTrendingUp, 
   LuUser, 
   LuClock, 
   LuPlus, 
@@ -16,7 +15,6 @@ import {
   LuFileText,
   LuX,
   LuClock3,
-  LuInfo,
   LuPencil
 } from 'react-icons/lu';
 import { UserContext } from '../../context/userContext';
@@ -45,6 +43,7 @@ const TraineeMainDashboard = () => {
     submitted: false
   });
   const [isEditingEod, setIsEditingEod] = useState(false);
+  const [expandedTasks, setExpandedTasks] = useState({});
   const [taskStatuses, setTaskStatuses] = useState({});
   const [taskRemarks, setTaskRemarks] = useState({});
   const [demoUpload, setDemoUpload] = useState({
@@ -54,19 +53,7 @@ const TraineeMainDashboard = () => {
     type: 'online', // online, offline
     courseTag: ''
   });
-  const [learningReports, setLearningReports] = useState({
-    progress: [],
-    examScores: [],
-    demoFeedback: [],
-    quizScores: [],
-    deploymentStatus: null
-  });
 
-  // Load learning reports data (to be implemented with real API)
-  useEffect(() => {
-    // TODO: Replace with actual API call to fetch learning reports
-    // For now, keeping empty state
-  }, []);
 
   // Load submitted day plans from backend
   useEffect(() => {
@@ -216,6 +203,7 @@ const TraineeMainDashboard = () => {
     });
   };
 
+
   // Helper function to validate time range format
   const isValidTimeRange = (timeString) => {
     if (!timeString || !timeString.trim()) return false;
@@ -246,11 +234,23 @@ const TraineeMainDashboard = () => {
     // Close the view popup if it's open
     setShowViewPopup(false);
     
+    // console.log('=== EDIT DAY PLAN DEBUG START ===');
+    // console.log('Original plan received:', plan);
+    // console.log('Plan tasks:', plan.tasks);
+    // console.log('Plan checkboxes:', plan.checkboxes);
+    
     // Ensure tasks have proper IDs for checkbox mapping
-    const tasksWithIds = plan.tasks.map((task, index) => ({
-      ...task,
-      id: task.id || `task_${Date.now()}_${index}` // Generate ID if missing
-    }));
+    const tasksWithIds = plan.tasks.map((task, index) => {
+      // Preserve the original task ID if it exists, otherwise generate one
+      const taskWithId = {
+        ...task,
+        id: task.id || `task_${Date.now()}_${index}` // Generate ID if missing
+      };
+      console.log(`Task ${index}:`, { original: task, withId: taskWithId });
+      return taskWithId;
+    });
+    
+   // console.log('Tasks with IDs:', tasksWithIds);
     
     // Load the plan data into the form for editing
     setDayPlan({
@@ -259,16 +259,44 @@ const TraineeMainDashboard = () => {
       status: 'draft'
     });
     
-    // Map checkboxes to use the new task IDs
+    // Map checkboxes to use the task IDs
     const mappedCheckboxes = {};
     if (plan.checkboxes) {
-      Object.keys(plan.checkboxes).forEach(oldTaskId => {
-        const taskIndex = parseInt(oldTaskId);
-        if (!isNaN(taskIndex) && tasksWithIds[taskIndex]) {
-          mappedCheckboxes[tasksWithIds[taskIndex].id] = plan.checkboxes[oldTaskId];
+      // console.log('Original checkboxes structure:', plan.checkboxes);
+      // console.log('Available checkbox keys:', Object.keys(plan.checkboxes));
+      
+      // For each task, map its checkboxes using the task ID
+      tasksWithIds.forEach((task, index) => {
+        const taskId = task.id;
+        
+        // Try multiple possible keys for the checkboxes
+        const possibleKeys = [
+          String(taskId),     // Task ID as string (e.g., "1")
+          taskId,             // Task ID as number (e.g., 1)
+          String(index),      // Task index as string (e.g., "0")
+          index               // Task index as number (e.g., 0)
+        ];
+        
+      //  console.log(`Task ${index} (ID: ${taskId}): Trying possible keys:`, possibleKeys);
+        
+        let found = false;
+        for (const key of possibleKeys) {
+          if (plan.checkboxes[key]) {
+           // console.log(`Found checkboxes for task ${index} with key "${key}", mapping to task ID: ${taskId}`);
+            mappedCheckboxes[taskId] = plan.checkboxes[key];
+            found = true;
+            break;
+          }
+        }
+        
+        if (!found) {
+          console.log(`No checkboxes found for task ${index} with any key`);
         }
       });
     }
+    
+    // console.log('Final mapped checkboxes before setting:', mappedCheckboxes);
+    // console.log('Mapped checkbox keys:', Object.keys(mappedCheckboxes));
     
     setDynamicCheckboxes(mappedCheckboxes);
     
@@ -278,9 +306,15 @@ const TraineeMainDashboard = () => {
     // Remove the plan from submitted plans since we're editing it
     setSubmittedDayPlans(prev => prev.filter(p => p.id !== plan.id));
     
-    console.log('Edit day plan - Original plan:', plan);
-    console.log('Edit day plan - Tasks with IDs:', tasksWithIds);
-    console.log('Edit day plan - Mapped checkboxes:', mappedCheckboxes);
+    // console.log('Edit day plan - Original plan:', plan);
+    // console.log('Edit day plan - Tasks with IDs:', tasksWithIds);
+    // console.log('Edit day plan - Mapped checkboxes:', mappedCheckboxes);
+    // console.log('=== EDIT DAY PLAN DEBUG END ===');
+    
+    // Add a small delay to check if dynamicCheckboxes state is updated
+    setTimeout(() => {
+      console.log('Dynamic checkboxes state after setting:', dynamicCheckboxes);
+    }, 100);
     
     toast.success('Day plan loaded for editing');
   };
@@ -432,17 +466,14 @@ const TraineeMainDashboard = () => {
     }));
   };
 
-  const testConnection = async () => {
-    try {
-      console.log("Testing connection...");
-      const response = await axiosInstance.get('/api/trainee-dayplans/test');
-      console.log("Test response:", response.data);
-      toast.success('Connection test successful!');
-    } catch (error) {
-      console.error("Test error:", error);
-      toast.error('Connection test failed: ' + error.message);
-    }
+  const toggleTaskExpansion = (planId, taskIndex) => {
+    const key = `${planId}-${taskIndex}`;
+    setExpandedTasks(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
+
 
   const handleEodUpdate = async () => {
     // Validate that all tasks have status selected
@@ -501,19 +532,19 @@ const TraineeMainDashboard = () => {
         overallRemarks: eodStatus.remarks
       };
       
-      console.log("Sending EOD update request:", requestData);
+      //console.log("Sending EOD update request:", requestData);
       
       const response = await axiosInstance.post('/api/trainee-dayplans/eod-update', requestData);
 
       if (response.data.success !== false) {
-        setEodStatus(prev => ({ ...prev, submitted: true }));
-        toast.success('EOD status updated successfully');
+    setEodStatus(prev => ({ ...prev, submitted: true }));
+    toast.success('EOD status updated successfully');
         
         // Send notification to trainer
         // This will be handled by the backend
       }
     } catch (error) {
-      console.error('Error updating EOD status:', error);
+     // console.error('Error updating EOD status:', error);
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
@@ -530,14 +561,6 @@ const TraineeMainDashboard = () => {
     toast.success('Demo uploaded successfully');
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Pass': return <LuCheck className="w-4 h-4 text-green-500" />;
-      case 'Fail': return <LuX className="w-4 h-4 text-red-500" />;
-      case 'In Progress': return <LuClock3 className="w-4 h-4 text-yellow-500" />;
-      default: return <LuInfo className="w-4 h-4 text-gray-500" />;
-    }
-  };
 
   const renderDayPlan = () => (
     <div className="space-y-6">
@@ -615,8 +638,14 @@ const TraineeMainDashboard = () => {
                 
                 {/* Display checkboxes for this task */}
                 {(() => {
-                  console.log(`Rendering checkboxes for task ${task.id}:`, dynamicCheckboxes[task.id]);
+                  // console.log(`=== CHECKBOX RENDERING DEBUG ===`);
+                  // console.log(`Task ID: ${task.id}`);
+                  // console.log(`Dynamic checkboxes keys:`, Object.keys(dynamicCheckboxes));
+                  // console.log(`Dynamic checkboxes for task ${task.id}:`, dynamicCheckboxes[task.id]);
+                  // console.log(`All dynamic checkboxes:`, dynamicCheckboxes);
+                  
                   if (!dynamicCheckboxes[task.id] || Object.keys(dynamicCheckboxes[task.id]).length === 0) {
+                   // console.log(`No checkboxes found for task ${task.id}`);
                     return (
                       <div className="text-sm text-gray-500 italic mb-3">
                         No checkboxes added for this task
@@ -724,11 +753,11 @@ const TraineeMainDashboard = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Previous Day Plans</h3>
         {submittedDayPlans.length > 0 ? (
-          <div className="space-y-2">
+        <div className="space-y-2">
             {submittedDayPlans.map((plan) => (
               <div key={plan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">
+              <div>
+                <p className="font-medium text-gray-900">
                     {moment(plan.date).format('MMM DD, YYYY')}
                   </p>
                   <p className="text-sm text-gray-500">
@@ -737,7 +766,7 @@ const TraineeMainDashboard = () => {
                       ` ${Object.values(plan.checkboxes).flat().length} checkbox${Object.values(plan.checkboxes).flat().length !== 1 ? 'es' : ''}`
                     }
                   </p>
-                </div>
+              </div>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     plan.status === 'draft' 
@@ -761,9 +790,9 @@ const TraineeMainDashboard = () => {
                       onClick={() => handleViewDayPlan(plan)}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
                     >
-                      <LuEye className="w-4 h-4" />
-                      <span>View</span>
-                    </button>
+                <LuEye className="w-4 h-4" />
+                <span>View</span>
+              </button>
                     {plan.status === 'in_progress' && (
                       <button 
                         onClick={() => handleEditDayPlan(plan)}
@@ -775,9 +804,9 @@ const TraineeMainDashboard = () => {
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
         ) : (
           <div className="text-center py-8">
             <LuFileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -802,12 +831,12 @@ const TraineeMainDashboard = () => {
           );
           
           // Debug logging
-          console.log('All submitted day plans:', submittedDayPlans);
-          console.log('Today\'s plans:', todayPlans);
-          console.log('Today\'s date:', moment().format('YYYY-MM-DD'));
+          // console.log('All submitted day plans:', submittedDayPlans);
+          // console.log('Today\'s plans:', todayPlans);
+          // console.log('Today\'s date:', moment().format('YYYY-MM-DD'));
           
           return todayPlans.length > 0 ? (
-            <div className="space-y-4">
+        <div className="space-y-4">
               {todayPlans.map((plan, planIndex) => (
                 <div key={plan.id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
@@ -832,100 +861,138 @@ const TraineeMainDashboard = () => {
                        plan.status === 'pending' ? 'Pending' :
                        plan.status}
                     </span>
-                  </div>
-
+              </div>
+              
                   {/* Tasks from Day Plan */}
                   <div className="space-y-3">
-                    {plan.tasks.map((task, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">Task {index + 1}: {task.title}</h4>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-blue-600 font-medium">{task.timeAllocation}</span>
-                            {task.status && (
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                task.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                                task.status === 'pending' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {task.status === 'completed' ? 'Completed' :
-                                 task.status === 'in_progress' ? 'In Progress' :
-                                 task.status === 'pending' ? 'Pending' :
-                                 'Not Started'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {task.description && (
-                          <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                        )}
-                        {task.remarks && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-3">
-                            <p className="text-sm text-yellow-800">
-                              <strong>Remarks:</strong> {task.remarks}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {/* Task Status Selection */}
-                        <div className="space-y-3">
-                          <div className="flex items-center space-x-4">
-                            <label className="flex items-center space-x-2">
-                              <input 
-                                type="radio" 
-                                name={`status-${plan.id}-${index}`} 
-                                value="completed" 
-                                className="text-green-500"
-                                checked={taskStatuses[`${plan.id}-${index}`] === 'completed'}
-                                onChange={() => handleTaskStatusChange(plan.id, index, 'completed', '')}
-                              />
-                              <span className="text-sm text-gray-700">Completed</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input 
-                                type="radio" 
-                                name={`status-${plan.id}-${index}`} 
-                                value="in_progress" 
-                                className="text-yellow-500"
-                                checked={taskStatuses[`${plan.id}-${index}`] === 'in_progress'}
-                                onChange={() => handleTaskStatusChange(plan.id, index, 'in_progress', '')}
-                              />
-                              <span className="text-sm text-gray-700">In Progress</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                              <input 
-                                type="radio" 
-                                name={`status-${plan.id}-${index}`} 
-                                value="pending" 
-                                className="text-red-500"
-                                checked={taskStatuses[`${plan.id}-${index}`] === 'pending'}
-                                onChange={() => handleTaskStatusChange(plan.id, index, 'pending', '')}
-                              />
-                              <span className="text-sm text-gray-700">Pending</span>
-                            </label>
+                    {plan.tasks.map((task, index) => {
+                      const taskKey = `${plan.id}-${index}`;
+                      const isExpanded = expandedTasks[taskKey];
+                      const currentStatus = taskStatuses[taskKey];
+                      const currentRemarks = taskRemarks[taskKey] || '';
+                      const isEodApproved = plan.eodUpdate?.status === 'approved';
+                      
+                      return (
+                        <div key={index} className="bg-gray-50 rounded-lg p-3">
+                          <div 
+                            className={`flex items-center justify-between mb-2 p-2 rounded transition-colors ${
+                              !isEodApproved ? 'cursor-pointer hover:bg-gray-100' : 'cursor-default'
+                            }`}
+                            onClick={() => !isEodApproved && toggleTaskExpansion(plan.id, index)}
+                          >
+                            <h4 className="font-medium text-gray-900">Task {index + 1}: {task.title}</h4>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-blue-600 font-medium">{task.timeAllocation}</span>
+                              {currentStatus && (
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                  currentStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {currentStatus}
+                                </span>
+                              )}
+                              {!isEodApproved && (
+                                <span className="text-gray-400">
+                                  {isExpanded ? '▼' : '▶'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           
-                          {/* Remarks Field - Required for In Progress and Pending */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Remarks/Blockers
-                              <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <textarea
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              rows="2"
-                              placeholder="Add any remarks or blockers for this task"
-                              value={taskRemarks[`${plan.id}-${index}`] || ''}
-                              onChange={(e) => handleTaskRemarksChange(plan.id, index, e.target.value)}
-                            />
-                          </div>
+                          {task.description && (
+                            <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+                          )}
+                          
+                          {/* Expanded Task Status Selection - Only show if EOD not approved */}
+                          {isExpanded && !isEodApproved && (
+                            <div className="space-y-3 mt-4">
+                              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2">
+                                  <input 
+                                    type="radio" 
+                                    name={`status-${plan.id}-${index}`} 
+                                    value="completed" 
+                                    className="text-green-500"
+                                    checked={currentStatus === 'completed'}
+                                    onChange={() => handleTaskStatusChange(plan.id, index, 'completed', '')}
+                                  />
+                  <span className="text-sm text-gray-700">Completed</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                                  <input 
+                                    type="radio" 
+                                    name={`status-${plan.id}-${index}`} 
+                                    value="in_progress" 
+                                    className="text-yellow-500"
+                                    checked={currentStatus === 'in_progress'}
+                                    onChange={() => handleTaskStatusChange(plan.id, index, 'in_progress', '')}
+                                  />
+                  <span className="text-sm text-gray-700">In Progress</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                                  <input 
+                                    type="radio" 
+                                    name={`status-${plan.id}-${index}`} 
+                                    value="pending" 
+                                    className="text-red-500"
+                                    checked={currentStatus === 'pending'}
+                                    onChange={() => handleTaskStatusChange(plan.id, index, 'pending', '')}
+                                  />
+                  <span className="text-sm text-gray-700">Pending</span>
+                </label>
+              </div>
+              
+                              {/* Remarks Field - Required for In Progress and Pending */}
+                              {(currentStatus === 'in_progress' || currentStatus === 'pending') && (
+              <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Remarks/Blockers
+                                    <span className="text-red-500 ml-1">*</span>
+                                  </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows="2"
+                  placeholder="Add any remarks or blockers for this task"
+                                    value={currentRemarks}
+                                    onChange={(e) => handleTaskRemarksChange(plan.id, index, e.target.value)}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Show read-only status when EOD is approved */}
+                          {isExpanded && isEodApproved && (
+                            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-green-800">Final Status</span>
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  currentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                  currentStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {currentStatus === 'completed' ? 'Completed' :
+                                   currentStatus === 'in_progress' ? 'In Progress' :
+                                   currentStatus === 'pending' ? 'Pending' : 'Not Set'}
+                                </span>
+                              </div>
+                              {currentRemarks && (
+                                <p className="text-sm text-green-700">
+                                  <strong>Remarks:</strong> {currentRemarks}
+                                </p>
+                              )}
+                              <p className="text-xs text-green-600 mt-1">
+                                ✓ Approved by trainer - No longer editable
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      );
+                    })}
+              </div>
+            </div>
+          ))}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -935,7 +1002,7 @@ const TraineeMainDashboard = () => {
             </div>
           );
         })()}
-      </div>
+        </div>
 
       {/* EOD Update Section */}
       {submittedDayPlans.some(plan => moment(plan.date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) && (() => {
@@ -944,23 +1011,46 @@ const TraineeMainDashboard = () => {
         );
         const isPending = todayPlan?.status === 'pending';
         const isCompleted = todayPlan?.status === 'completed';
+        const isEodPending = todayPlan?.eodUpdate?.status === 'submitted' && todayPlan?.status === 'pending';
+        const isEodApproved = todayPlan?.eodUpdate?.status === 'approved';
+        const isEodRejected = todayPlan?.eodUpdate?.status === 'rejected';
         
         return (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">End of Day Update</h3>
               <div className="flex items-center space-x-2">
-                {isPending && (
-                  <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800">
-                    Pending
+                {isEodPending && (
+                  <span className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-800">
+                    EOD Pending
                   </span>
                 )}
-                {isCompleted && (
+                {isEodApproved && (
                   <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800">
-                    Completed
+                    EOD Approved
                   </span>
                 )}
-                {isPending && (
+                {isEodRejected && (
+                  <span className="px-3 py-1 text-sm rounded-full bg-red-100 text-red-800">
+                    EOD Rejected
+                  </span>
+                )}
+                {isPending && !isEodPending && !isEodApproved && !isEodRejected && (
+                  <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-800">
+                    Pending Review
+                  </span>
+                )}
+                {isCompleted && !isEodApproved && !isEodRejected && (
+                  <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800">
+                    Approved
+                  </span>
+                )}
+                {!isPending && !isCompleted && !isEodPending && !isEodApproved && !isEodRejected && (
+                  <span className="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-800">
+                    Not Submitted
+                  </span>
+                )}
+                {isPending && !isEodPending && !isEodApproved && !isEodRejected && (
                   <button
                     onClick={() => setIsEditingEod(!isEditingEod)}
                     className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -971,8 +1061,8 @@ const TraineeMainDashboard = () => {
               </div>
             </div>
             
-            {/* Show EOD data when pending or completed */}
-            {(isPending || isCompleted) && todayPlan?.eodUpdate && (
+            {/* Show EOD data when pending, completed, EOD pending, approved, or rejected */}
+            {(isPending || isCompleted || isEodPending || isEodApproved || isEodRejected) && todayPlan?.eodUpdate && (
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Submitted EOD Update</h4>
                 <div className="space-y-2">
@@ -996,8 +1086,8 @@ const TraineeMainDashboard = () => {
               </div>
             )}
             
-            {/* Show input form only when not pending/completed or when editing */}
-            {(!isPending && !isCompleted) || isEditingEod ? (
+            {/* Show input form only when not pending/completed/EOD pending/approved/rejected or when editing */}
+            {(!isPending && !isCompleted && !isEodPending && !isEodApproved && !isEodRejected) || isEditingEod ? (
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1014,27 +1104,22 @@ const TraineeMainDashboard = () => {
               </div>
             ) : null}
 
-            <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
-              <button
-                onClick={testConnection}
-                className="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <LuInfo className="w-4 h-4" />
-                <span>Test Connection</span>
-              </button>
-              {(!isPending && !isCompleted) || isEditingEod ? (
-                <button
-                  onClick={handleEodUpdate}
-                  className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <LuCheck className="w-4 h-4" />
+        <div className="mt-6 pt-4 border-t border-gray-200">
+              {/* Show submit button when there are tasks and not in EOD approved/rejected state */}
+              {!isEodApproved && !isEodRejected && (
+          <button
+            onClick={handleEodUpdate}
+            className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+          >
+            <LuCheck className="w-4 h-4" />
                   <span>
-                    {isEditingEod ? 'Update EOD' : 'Submit EOD Update'}
+                    {isEodPending ? 'EOD Submitted - Pending Review' : 
+                     isEditingEod ? 'Update EOD' : 'Submit EOD Update'}
                   </span>
-                </button>
-              ) : null}
-            </div>
-          </div>
+          </button>
+              )}
+        </div>
+      </div>
         );
       })()}
 
@@ -1042,41 +1127,58 @@ const TraineeMainDashboard = () => {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Task History</h3>
         
-        {eodStatus.submitted ? (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <LuCheck className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium text-green-900">EOD Update Submitted</h4>
+        {(() => {
+          // Get only EOD approved day plans for history
+          const approvedPlans = submittedDayPlans.filter(plan => 
+            plan.eodUpdate?.status === 'approved'
+          );
+
+          if (approvedPlans.length === 0) {
+            return (
+              <div className="text-center py-8">
+                <LuClock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm">No task history available</p>
+                <p className="text-gray-400 text-xs mt-1">Your approved tasks will appear here</p>
               </div>
-              <p className="text-sm text-green-700">
-                Your end-of-day update has been submitted successfully and your trainer has been notified.
-              </p>
-            </div>
-            
-            {/* Show submitted task statuses */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Task Status Summary</h4>
-              {submittedDayPlans
-                .filter(plan => moment(plan.date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD'))
-                .map((plan) => (
+            );
+          }
+
+          return (
+            <div className="space-y-4">
+              {/* Show approved tasks with progress bars */}
+              {approvedPlans.map((plan) => {
+                const isApproved = plan.eodUpdate?.status === 'approved';
+                
+                return (
                   <div key={plan.id} className="border border-gray-200 rounded-lg p-4">
-                    <h5 className="font-medium text-gray-900 mb-3">
-                      {moment(plan.date).format('MMM DD, YYYY')}
-                    </h5>
-                    <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-medium text-gray-900">
+                        {moment(plan.date).format('MMM DD, YYYY')}
+                      </h5>
+                      {isApproved && (
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          ✓ Approved
+                        </span>
+                      )}
+              </div>
+                    
+                    <div className="space-y-3">
                       {plan.tasks.map((task, index) => {
-                        const key = `${plan.id}-${index}`;
-                        const status = taskStatuses[key];
-                        const remarks = taskRemarks[key] || '';
+                        const status = task.status; // Use the actual status from the database
+                        const remarks = task.remarks || '';
+                        
+                        // Calculate progress percentage
+                        const progressPercentage = status === 'completed' ? 100 : 
+                                                status === 'in_progress' ? 50 : 
+                                                status === 'pending' ? 0 : 0;
                         
                         return (
-                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <div className="flex-1">
-                              <span className="font-medium text-gray-900">{task.title}</span>
-                              <span className="text-sm text-gray-500 ml-2">({task.timeAllocation})</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
+                          <div key={index} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1">
+                                <span className="font-medium text-gray-900">{task.title}</span>
+                                <span className="text-sm text-gray-500 ml-2">({task.timeAllocation})</span>
+            </div>
                               <span className={`px-2 py-1 text-xs rounded-full ${
                                 status === 'completed' ? 'bg-green-100 text-green-800' :
                                 status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
@@ -1088,28 +1190,48 @@ const TraineeMainDashboard = () => {
                                  status === 'pending' ? 'Pending' :
                                  'Not Set'}
                               </span>
+        </div>
+                            
+                            {/* Progress Bar */}
+                            <div className="mb-2">
+                              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                <span>Progress</span>
+                                <span>{progressPercentage}%</span>
+      </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-300 ${
+                                    progressPercentage === 100 ? 'bg-green-500' :
+                                    progressPercentage === 50 ? 'bg-yellow-500' :
+                                    'bg-red-500'
+                                  }`}
+                                  style={{ width: `${progressPercentage}%` }}
+                                ></div>
+                              </div>
                             </div>
+                            
+                            {remarks && (
+                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600">
+                                <strong>Remarks:</strong> {remarks}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
-                    {eodStatus.remarks && (
+                    
+                    {plan.eodUpdate?.overallRemarks && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <h6 className="font-medium text-gray-900 mb-1">Overall Remarks:</h6>
-                        <p className="text-sm text-gray-600">{eodStatus.remarks}</p>
+                        <p className="text-sm text-gray-600">{plan.eodUpdate.overallRemarks}</p>
                       </div>
                     )}
                   </div>
-                ))}
+                );
+              })}
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuClock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No task history available</p>
-            <p className="text-gray-400 text-xs mt-1">Your completed tasks will appear here</p>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
@@ -1217,177 +1339,15 @@ const TraineeMainDashboard = () => {
     </div>
   );
 
-  const renderLearningReports = () => (
-    <div className="space-y-6">
-      {/* Progress Overview */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Progress Overview</h2>
-        {learningReports.progress.length > 0 ? (
-          <div className="space-y-4">
-            {learningReports.progress.map((course, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{course.course}</h3>
-                  <span className="text-sm text-gray-500">{course.completed}/{course.totalModules} modules</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${course.progress}%` }}
-                  ></div>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">{course.progress}% complete</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuTrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No course progress data available</p>
-            <p className="text-gray-400 text-xs mt-1">Your course progress will appear here</p>
-          </div>
-        )}
-      </div>
 
-      {/* Fortnight Exams */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Fortnight Exams</h2>
-        {learningReports.examScores.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 font-medium text-gray-700">Course</th>
-                  <th className="text-left py-2 font-medium text-gray-700">Score</th>
-                  <th className="text-left py-2 font-medium text-gray-700">Date</th>
-                  <th className="text-left py-2 font-medium text-gray-700">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {learningReports.examScores.map((exam, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 text-gray-900">{exam.course}</td>
-                    <td className="py-3 text-gray-900">{exam.score}%</td>
-                    <td className="py-3 text-gray-600">{moment(exam.date).format('MMM DD, YYYY')}</td>
-                    <td className="py-3">
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(exam.status)}
-                        <span className="text-sm text-gray-700">{exam.status}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuFileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No exam scores available</p>
-            <p className="text-gray-400 text-xs mt-1">Your exam results will appear here</p>
-          </div>
-        )}
-      </div>
 
-      {/* Demo Feedback */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Demo Feedback</h2>
-        {learningReports.demoFeedback.length > 0 ? (
-          <div className="space-y-4">
-            {learningReports.demoFeedback.map((demo, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">{demo.title}</h3>
-                  <div className="flex items-center space-x-1">
-                    {[...Array(5)].map((_, i) => (
-                      <LuStar 
-                        key={i} 
-                        className={`w-4 h-4 ${i < Math.floor(demo.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                      />
-                    ))}
-                    <span className="text-sm text-gray-600 ml-1">{demo.rating}/5</span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-2">{demo.feedback}</p>
-                <p className="text-xs text-gray-500">{moment(demo.date).format('MMM DD, YYYY')}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuVideo className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No demo feedback available</p>
-            <p className="text-gray-400 text-xs mt-1">Your demo feedback will appear here</p>
-          </div>
-        )}
-      </div>
 
-      {/* Average Quiz Scores */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Average Quiz Scores</h2>
-        {learningReports.quizScores.length > 0 ? (
-          <div className="space-y-4">
-            {learningReports.quizScores.map((quiz, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h3 className="font-medium text-gray-900">{quiz.course}</h3>
-                  <p className="text-sm text-gray-500">{quiz.attempts} attempts</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-gray-900">{quiz.average}%</p>
-                  <div className="flex items-center space-x-1">
-                    <LuTrendingUp className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-green-600">+5% from last week</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuStar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No quiz scores available</p>
-            <p className="text-gray-400 text-xs mt-1">Your quiz results will appear here</p>
-          </div>
-        )}
-      </div>
-
-      {/* Deployment Status */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Deployment Status</h2>
-        {learningReports.deploymentStatus ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <LuCheck className="w-5 h-5 text-green-500" />
-              <h3 className="font-medium text-green-900">Campus Allocated</h3>
-            </div>
-            <p className="text-green-800 mb-2">
-              <strong>Campus:</strong> {learningReports.deploymentStatus.campus}
-            </p>
-            <p className="text-green-800 mb-2">
-              <strong>Start Date:</strong> {moment(learningReports.deploymentStatus.startDate).format('MMM DD, YYYY')}
-            </p>
-            <p className="text-green-800">
-              <strong>Next Steps:</strong> {learningReports.deploymentStatus.nextSteps}
-            </p>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <LuUser className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">No deployment status available</p>
-            <p className="text-gray-400 text-xs mt-1">Your deployment information will appear here</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
 
   const tabs = [
     { id: 'day-plan', label: 'Day Plan', icon: LuCalendar },
     { id: 'task-status', label: 'Task Status', icon: LuCheck },
-    { id: 'demo-management', label: 'Demo Management', icon: LuVideo },
-    { id: 'learning-reports', label: 'Learning Reports', icon: LuTrendingUp }
+    { id: 'demo-management', label: 'Demo Management', icon: LuVideo }
   ];
 
   return (
@@ -1429,7 +1389,6 @@ const TraineeMainDashboard = () => {
           {activeTab === 'day-plan' && renderDayPlan()}
           {activeTab === 'task-status' && renderTaskStatus()}
           {activeTab === 'demo-management' && renderDemoManagement()}
-          {activeTab === 'learning-reports' && renderLearningReports()}
         </div>
       </div>
 

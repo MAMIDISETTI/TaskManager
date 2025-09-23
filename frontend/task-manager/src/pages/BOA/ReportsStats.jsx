@@ -670,7 +670,7 @@ const ReportsStats = () => {
               <div className="card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Active Trainees</p>
+                    <p className="text-sm font-medium text-gray-600">Working Trainees</p>
                     <p className="text-2xl font-bold text-green-600">{stats.activeTrainees}</p>
                     <p className="text-xs text-gray-500">
                       {stats.totalJoiners > 0 
@@ -723,7 +723,7 @@ const ReportsStats = () => {
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="joiners" fill="#3B82F6" name="New Joiners" />
-                      <Bar dataKey="active" fill="#10B981" name="Active" />
+                      <Bar dataKey="active" fill="#10B981" name="Working" />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

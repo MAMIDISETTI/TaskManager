@@ -35,6 +35,7 @@ import AbsentDashboard from "./pages/Trainer/AbsentDashboard";
 
 // Trainee pages
 import TraineeMainDashboard from "./pages/Trainee/TraineeMainDashboard";
+import LearningReports from "./pages/Trainee/LearningReports";
 import ProfileSettings from "./pages/Trainee/ProfileSettings";
 
 // Common pages
@@ -89,6 +90,7 @@ const App = () => {
             <Route element={<PrivateRoute allowedRoles={["trainee"]} />}>
               <Route path="/trainee/dashboard" element={<TraineeMainDashboard />} />
               <Route path="/trainee/day-plans" element={<MyTasks />} />
+              <Route path="/trainee/learning-reports" element={<LearningReports />} />
               <Route path="/trainee/attendance" element={<ViewTaskDetails />} />
               <Route path="/trainee/profile-settings" element={<ProfileSettings />} />
             </Route>

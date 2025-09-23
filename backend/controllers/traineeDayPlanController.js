@@ -52,7 +52,10 @@ const createTraineeDayPlan = async (req, res) => {
     const dayPlanData = {
       trainee: actualTraineeId,
       date: new Date(date),
-      tasks: tasks || [],
+      tasks: (tasks || []).map(task => ({
+        ...task,
+        id: task.id || `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Ensure task has ID
+      })),
       checkboxes: checkboxes || {},
       status: status === "submitted" ? "in_progress" : status,
       submittedAt: status === "submitted" ? new Date() : null,
@@ -60,6 +63,12 @@ const createTraineeDayPlan = async (req, res) => {
     };
     
     console.log("Creating day plan with data:", dayPlanData);
+    console.log("Checkboxes being saved:", {
+      checkboxes: checkboxes,
+      checkboxesType: typeof checkboxes,
+      checkboxesKeys: Object.keys(checkboxes || {}),
+      checkboxesStringified: JSON.stringify(checkboxes)
+    });
     
     let traineeDayPlan;
     try {
@@ -168,6 +177,20 @@ const getTraineeDayPlans = async (req, res) => {
       .sort({ date: -1, submittedAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
+
+    // Debug: Log checkbox data for each plan
+    console.log('=== TRAINEE DAY PLANS DEBUG ===');
+    dayPlans.forEach((plan, index) => {
+      console.log(`Plan ${index} (${plan._id}):`, {
+        trainee: plan.trainee?.name,
+        date: plan.date,
+        checkboxes: plan.checkboxes,
+        checkboxesType: typeof plan.checkboxes,
+        checkboxesKeys: Object.keys(plan.checkboxes || {}),
+        tasks: plan.tasks?.map(task => ({ title: task.title, id: task._id }))
+      });
+    });
+    console.log('=== END TRAINEE DAY PLANS DEBUG ===');
 
     const total = await TraineeDayPlan.countDocuments(query);
 

@@ -13,6 +13,14 @@ const getResults = async (req, res) => {
     
     let query = {};
     
+    // If user is a trainee, automatically filter by their author_id
+    if (req.user.role === 'trainee') {
+      query.author_id = req.user.author_id;
+    } else if (authorId) {
+      // For other roles, use the provided authorId if available
+      query.author_id = authorId;
+    }
+    
     if (examType) {
       // Make the exam type search more flexible to handle variations
       if (examType === 'fortnight') {
@@ -30,10 +38,6 @@ const getResults = async (req, res) => {
       } else {
         query.exam_type = examType;
       }
-    }
-    
-    if (authorId) {
-      query.author_id = authorId;
     }
 
     // console.log('Query being used:', query);
@@ -59,9 +63,19 @@ const getResults = async (req, res) => {
       const trainee = await User.findOne({ author_id: result.author_id }).select('assignedTrainer name email');
       let trainerName = result.trainer_name || 'N/A';
       
+      console.log(`Processing result for trainee ${result.author_id}:`, {
+        traineeFound: !!trainee,
+        traineeAssignedTrainer: trainee?.assignedTrainer,
+        existingTrainerName: result.trainer_name
+      });
+      
       // If no trainer_name is set and trainee has an assigned trainer, get trainer name
       if ((!result.trainer_name || result.trainer_name === '') && trainee && trainee.assignedTrainer) {
-        const trainer = await User.findOne({ author_id: trainee.assignedTrainer }).select('name');
+        const trainer = await User.findById(trainee.assignedTrainer).select('name');
+        console.log(`Looking up trainer by ID ${trainee.assignedTrainer}:`, {
+          trainerFound: !!trainer,
+          trainerName: trainer?.name
+        });
         if (trainer) {
           trainerName = trainer.name;
         }

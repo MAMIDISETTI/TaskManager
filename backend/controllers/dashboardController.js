@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const Attendance = require("../models/Attendance");
 const DayPlan = require("../models/DayPlan");
+const TraineeDayPlan = require("../models/TraineeDayPlan");
 const Assignment = require("../models/Assignment");
 const Observation = require("../models/Observation");
 const Notification = require("../models/Notification");
@@ -197,8 +199,9 @@ const getTrainerDashboard = async (req, res) => {
     console.log('Request user:', req.user);
     const trainerId = req.user.id;
     const { startDate, endDate } = req.query;
-    
+
     console.log('Trainer ID:', trainerId);
+    console.log('Trainer ID type:', typeof trainerId);
     console.log('Date range:', { startDate, endDate });
     
     // First, let's just try to find the trainer
@@ -217,6 +220,20 @@ const getTrainerDashboard = async (req, res) => {
     console.log('assignedTrainees field:', trainer.assignedTrainees);
     console.log(`Assigned trainees: ${trainer.assignedTrainees ? trainer.assignedTrainees.length : 0}`);
     
+    // Debug: Check all trainees in database and their assigned trainers
+    console.log('Checking all trainees in database...');
+    const allTrainees = await User.find({ role: 'trainee' }).select('name email assignedTrainer');
+    console.log('All trainees:', allTrainees.length);
+    allTrainees.forEach(trainee => {
+      console.log(`Trainee: ${trainee.name}, Assigned Trainer: ${trainee.assignedTrainer}`);
+    });
+    
+    // Find trainees assigned to this trainer
+    const traineesAssignedToThisTrainer = allTrainees.filter(trainee => 
+      trainee.assignedTrainer && trainee.assignedTrainer.toString() === trainerId
+    );
+    console.log(`Trainees assigned to this trainer: ${traineesAssignedToThisTrainer.length}`);
+    
     // Ensure assignedTrainees is an array and initialize if needed
     let assignedTrainees = [];
     
@@ -233,17 +250,278 @@ const getTrainerDashboard = async (req, res) => {
       console.log('assignedTrainees field initialized');
     }
     
-    // Return a simple response first to test
-    return res.json({
+    // If no assigned trainees found in the trainer's assignedTrainees field, 
+    // but we found trainees assigned to this trainer, update the trainer's assignedTrainees
+    if (assignedTrainees.length === 0 && traineesAssignedToThisTrainer.length > 0) {
+      console.log('Updating trainer assignedTrainees with found trainees...');
+      const traineeIds = traineesAssignedToThisTrainer.map(t => t._id);
+      await User.findByIdAndUpdate(trainerId, { 
+        $set: { assignedTrainees: traineeIds } 
+      });
+      assignedTrainees = traineesAssignedToThisTrainer;
+      console.log('Updated assignedTrainees with', assignedTrainees.length, 'trainees');
+    }
+    
+    // Set default date range (last 30 days) - but let's be more lenient for testing
+    const defaultEndDate = new Date();
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultStartDate.getDate() - 30);
+
+    // For now, let's not filter by date to see all day plans
+    const dateFilter = startDate && endDate ? {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate)
+    } : {}; // No date filter if not specified
+
+    console.log('Date filter:', dateFilter);
+
+    // First, let's check all day plans to see what we have
+    console.log('Checking all day plans in database...');
+    let allDayPlans = [];
+    let allTraineeDayPlans = [];
+    
+    try {
+      allDayPlans = await DayPlan.find({}).select('trainer date status title').limit(10);
+      console.log('All DayPlan records (first 10):', allDayPlans);
+    } catch (error) {
+      console.error('Error fetching DayPlan records:', error);
+    }
+    
+    try {
+      allTraineeDayPlans = await TraineeDayPlan.find({}).select('createdBy date status').limit(10);
+      console.log('All TraineeDayPlan records (first 10):', allTraineeDayPlans);
+    } catch (error) {
+      console.error('Error fetching TraineeDayPlan records:', error);
+    }
+    
+    // Check day plans for this specific trainer in both models
+    console.log('Checking day plans for trainer:', trainerId);
+    let trainerDayPlans = [];
+    let trainerTraineeDayPlans = [];
+    
+    try {
+      trainerDayPlans = await DayPlan.find({ trainer: trainerId }).select('trainer date status title');
+      console.log('DayPlan records for this trainer:', trainerDayPlans);
+    } catch (error) {
+      console.error('Error fetching trainer DayPlan records:', error);
+    }
+    
+    try {
+      trainerTraineeDayPlans = await TraineeDayPlan.find({ 
+        createdBy: 'trainer'
+      }).select('createdBy date status trainee assignedTrainees');
+      console.log('TraineeDayPlan records for this trainer:', trainerTraineeDayPlans);
+    } catch (error) {
+      console.error('Error fetching trainer TraineeDayPlan records:', error);
+    }
+    
+    // Get day plans created by this trainer from both models
+    console.log('Counting day plans from both models...');
+    
+    let dayPlanStats = [];
+    let traineeDayPlanStats = [];
+    
+    // Count from DayPlan model
+    try {
+      dayPlanStats = await DayPlan.aggregate([
+      {
+        $match: {
+            trainer: new mongoose.Types.ObjectId(trainerId),
+            ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+        }
+      },
+      {
+        $group: {
+          _id: null,
+            totalDayPlans: { $sum: 1 },
+            publishedPlans: {
+              $sum: { $cond: [{ $eq: ["$status", "published"] }, 1, 0] }
+            },
+            completedPlans: {
+              $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+            },
+            draftPlans: {
+              $sum: { $cond: [{ $eq: ["$status", "draft"] }, 1, 0] }
+            }
+          }
+        }
+      ]);
+      console.log('DayPlan stats:', dayPlanStats);
+    } catch (error) {
+      console.error('Error in DayPlan aggregation:', error);
+    }
+
+    // Count from TraineeDayPlan model where trainer created them
+    try {
+      traineeDayPlanStats = await TraineeDayPlan.aggregate([
+      {
+        $match: {
+            createdBy: 'trainer',
+            ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+        }
+      },
+      {
+        $group: {
+          _id: null,
+            totalDayPlans: { $sum: 1 },
+          publishedPlans: {
+            $sum: { $cond: [{ $eq: ["$status", "published"] }, 1, 0] }
+          },
+          completedPlans: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+            },
+            draftPlans: {
+              $sum: { $cond: [{ $eq: ["$status", "draft"] }, 1, 0] }
+            }
+          }
+        }
+      ]);
+      console.log('TraineeDayPlan stats (trainer created):', traineeDayPlanStats);
+    } catch (error) {
+      console.error('Error in TraineeDayPlan aggregation:', error);
+    }
+
+    // Count from TraineeDayPlan model where trainees created them (for this trainer's assigned trainees)
+    let traineeCreatedDayPlanStats = [];
+    try {
+      if (assignedTrainees.length > 0) {
+        traineeCreatedDayPlanStats = await TraineeDayPlan.aggregate([
+          {
+            $match: {
+              createdBy: 'trainee',
+              trainee: { $in: assignedTrainees.map(t => t._id) },
+              ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalDayPlans: { $sum: 1 },
+              publishedPlans: {
+                $sum: { $cond: [{ $eq: ["$status", "published"] }, 1, 0] }
+              },
+              completedPlans: {
+                $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+              },
+              draftPlans: {
+                $sum: { $cond: [{ $eq: ["$status", "draft"] }, 1, 0] }
+              }
+            }
+          }
+        ]);
+      }
+      console.log('TraineeDayPlan stats (trainee created):', traineeCreatedDayPlanStats);
+    } catch (error) {
+      console.error('Error in TraineeDayPlan (trainee created) aggregation:', error);
+    }
+    
+    // Combine the stats from all three sources
+    const combinedStats = {
+      totalDayPlans: (dayPlanStats[0]?.totalDayPlans || 0) + 
+                    (traineeDayPlanStats[0]?.totalDayPlans || 0) + 
+                    (traineeCreatedDayPlanStats[0]?.totalDayPlans || 0),
+      publishedPlans: (dayPlanStats[0]?.publishedPlans || 0) + 
+                     (traineeDayPlanStats[0]?.publishedPlans || 0) + 
+                     (traineeCreatedDayPlanStats[0]?.publishedPlans || 0),
+      completedPlans: (dayPlanStats[0]?.completedPlans || 0) + 
+                     (traineeDayPlanStats[0]?.completedPlans || 0) + 
+                     (traineeCreatedDayPlanStats[0]?.completedPlans || 0),
+      draftPlans: (dayPlanStats[0]?.draftPlans || 0) + 
+                 (traineeDayPlanStats[0]?.draftPlans || 0) + 
+                 (traineeCreatedDayPlanStats[0]?.draftPlans || 0)
+    };
+    
+    console.log('Combined stats:', combinedStats);
+
+    // Get observations created by this trainer
+    console.log('Counting observations...');
+    
+    // Debug: Check all observations in database
+    const allObservations = await Observation.find({}).limit(5).select('trainer trainee date status');
+    console.log('All observations in database (first 5):', allObservations);
+    
+    // Debug: Check observations for this specific trainer
+    const trainerObservations = await Observation.find({ trainer: trainerId }).limit(5).select('trainer trainee date status');
+    console.log('Observations for trainer', trainerId, ':', trainerObservations);
+    
+    const observationStats = await Observation.aggregate([
+      {
+        $match: {
+          trainer: new mongoose.Types.ObjectId(trainerId),
+          ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalObservations: { $sum: 1 },
+          submittedObservations: {
+            $sum: { $cond: [{ $eq: ["$status", "submitted"] }, 1, 0] }
+          },
+          reviewedObservations: {
+            $sum: { $cond: [{ $eq: ["$status", "reviewed"] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    console.log('Observation stats:', observationStats);
+
+    // Get recent day plans
+    console.log('Fetching recent day plans...');
+    const recentDayPlans = await DayPlan.find({
+      trainer: new mongoose.Types.ObjectId(trainerId),
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+    })
+      .populate('assignedTrainees', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('title date status assignedTrainees createdAt');
+
+    console.log('Recent day plans:', recentDayPlans.length);
+
+    // Get recent observations
+    console.log('Fetching recent observations...');
+    const recentObservations = await Observation.find({
+      trainer: new mongoose.Types.ObjectId(trainerId),
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
+    })
+      .populate('trainee', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('trainee date status rating comments createdAt');
+
+    console.log('Recent observations:', recentObservations.length);
+
+    // Get unread notifications
+    console.log('Fetching notifications...');
+    const unreadNotifications = await Notification.countDocuments({
+      recipient: new mongoose.Types.ObjectId(trainerId),
+      read: false
+    });
+
+    console.log('Unread notifications:', unreadNotifications);
+
+    console.log('=== TRAINER DASHBOARD SUCCESS ===');
+
+    res.json({
       overview: {
         assignedTrainees: assignedTrainees.length,
-        totalDayPlans: 0,
-        totalObservations: 0,
-        unreadNotifications: 0
+        totalDayPlans: combinedStats.totalDayPlans,
+        totalObservations: observationStats[0]?.totalObservations || 0,
+        unreadNotifications: unreadNotifications,
+        todayClockIn: null, // Add this for compatibility
+        todayClockOut: null
+      },
+      stats: {
+        totalTrainees: assignedTrainees.length,
+        totalDayPlans: combinedStats.totalDayPlans,
+        totalObservations: observationStats[0]?.totalObservations || 0,
+        todayClockIn: null
       },
       assignedTrainees: assignedTrainees,
-      recentDayPlans: [],
-      recentObservations: [],
+      recentDayPlans: recentDayPlans,
+      recentObservations: recentObservations,
       notifications: []
     });
 

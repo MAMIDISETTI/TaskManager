@@ -53,12 +53,12 @@ const DayPlans = () => {
   // Fetch day plans
   const getDayPlans = async () => {
     try {
-      console.log("Fetching day plans from:", API_PATHS.DAY_PLANS.GET_ALL);
+     // console.log("Fetching day plans from:", API_PATHS.DAY_PLANS.GET_ALL);
       const res = await axiosInstance.get(API_PATHS.DAY_PLANS.GET_ALL);
-      console.log("Day plans response:", res.data);
+    //  console.log("Day plans response:", res.data);
       setDayPlans(res.data.dayPlans || []);
     } catch (error) {
-      console.error("Error fetching day plans:", error);
+     // console.error("Error fetching day plans:", error);
       toast.error("Failed to fetch day plans");
     }
   };
@@ -66,12 +66,12 @@ const DayPlans = () => {
   // Fetch assigned trainees
   const getAssignedTrainees = async () => {
     try {
-      console.log("Fetching trainees from:", API_PATHS.USERS.LIST + "?role=trainee");
+    //  console.log("Fetching trainees from:", API_PATHS.USERS.LIST + "?role=trainee");
       const res = await axiosInstance.get(API_PATHS.USERS.LIST + "?role=trainee");
-      console.log("Trainees response:", res.data);
+    //  console.log("Trainees response:", res.data);
       setAssignedTrainees(res.data.users || []);
     } catch (error) {
-      console.error("Error fetching trainees:", error);
+    //  console.error("Error fetching trainees:", error);
       toast.error("Failed to fetch trainees");
     }
   };
@@ -79,25 +79,25 @@ const DayPlans = () => {
   // Fetch trainee day plans
   const getTraineeDayPlans = async () => {
     try {
-      console.log("Fetching trainee day plans from:", API_PATHS.TRAINEE_DAY_PLANS.GET_ALL);
+    //  console.log("Fetching trainee day plans from:", API_PATHS.TRAINEE_DAY_PLANS.GET_ALL);
       const res = await axiosInstance.get(API_PATHS.TRAINEE_DAY_PLANS.GET_ALL);
-      console.log("Trainee day plans response:", res.data);
+    //  console.log("Trainee day plans response:", res.data);
       
       // Debug each plan's checkbox data
       if (res.data.dayPlans) {
         res.data.dayPlans.forEach((plan, index) => {
-          console.log(`Plan ${index} (${plan._id}):`, {
-            trainee: plan.trainee?.name,
-            date: plan.date,
-            checkboxes: plan.checkboxes,
-            eodUpdate: plan.eodUpdate
-          });
+          // console.log(`Plan ${index} (${plan._id}):`, {
+          //   trainee: plan.trainee?.name,
+          //   date: plan.date,
+          //   checkboxes: plan.checkboxes,
+          //   eodUpdate: plan.eodUpdate
+          // });
         });
       }
       
       setTraineeDayPlans(res.data.dayPlans || []);
     } catch (error) {
-      console.error("Error fetching trainee day plans:", error);
+     // console.error("Error fetching trainee day plans:", error);
       toast.error("Failed to fetch trainee day plans");
     }
   };
@@ -114,7 +114,7 @@ const DayPlans = () => {
         getDayPlans();
       }
     } catch (error) {
-      console.error("Error creating day plan:", error);
+     // console.error("Error creating day plan:", error);
       toast.error("Failed to create day plan");
     }
   };
@@ -154,7 +154,7 @@ const DayPlans = () => {
           createdBy: "trainer" // Indicate this was created by a trainer
         };
 
-        console.log("Sending day plan data:", dayPlanData); // Debug log
+       // console.log("Sending day plan data:", dayPlanData); // Debug log
         return axiosInstance.post(API_PATHS.TRAINEE_DAY_PLANS.CREATE, dayPlanData);
       });
 
@@ -173,8 +173,8 @@ const DayPlans = () => {
         toast.error("Some day plans failed to create. Please try again.");
       }
     } catch (error) {
-      console.error("Error creating trainee day plans:", error);
-      console.error("Error response:", error.response?.data);
+      // console.error("Error creating trainee day plans:", error);
+      // console.error("Error response:", error.response?.data);
       toast.error(`Failed to create trainee day plans: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -256,8 +256,8 @@ const DayPlans = () => {
         );
       }
     } catch (error) {
-      console.error("Error accepting plan:", error);
-      console.error("Error response:", error.response?.data);
+      // console.error("Error accepting plan:", error);
+      // console.error("Error response:", error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to accept plan');
     } finally {
       setProcessingPlans(prev => ({ ...prev, [planId]: null }));
@@ -295,8 +295,8 @@ const DayPlans = () => {
         );
       }
     } catch (error) {
-      console.error("Error rejecting plan:", error);
-      console.error("Error response:", error.response?.data);
+      // console.error("Error rejecting plan:", error);
+      // console.error("Error response:", error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to reject plan');
     } finally {
       setProcessingPlans(prev => ({ ...prev, [planId]: null }));
@@ -342,7 +342,7 @@ const DayPlans = () => {
           getDayPlans();
         }
       } catch (error) {
-        console.error("Error deleting day plan:", error);
+       // console.error("Error deleting day plan:", error);
         toast.error("Failed to delete day plan");
       }
     }
@@ -358,7 +358,7 @@ const DayPlans = () => {
           getTraineeDayPlans();
         }
       } catch (error) {
-        console.error("Error deleting trainee day plan:", error);
+       // console.error("Error deleting trainee day plan:", error);
         toast.error("Failed to delete trainee day plan");
       }
     }
@@ -408,9 +408,9 @@ const DayPlans = () => {
 
   // Handle trainee plan popup
   const handleTraineePlanClick = (plan) => {
-    console.log("Selected trainee plan:", plan);
-    console.log("Plan checkboxes:", plan.checkboxes);
-    console.log("Plan EOD update:", plan.eodUpdate);
+    // console.log("Selected trainee plan:", plan);
+    // console.log("Plan checkboxes:", plan.checkboxes);
+    // console.log("Plan EOD update:", plan.eodUpdate);
     setSelectedTraineePlan(plan);
     setShowTraineePlanPopup(true);
     setReviewRemarks("");
@@ -451,8 +451,8 @@ const DayPlans = () => {
         getTraineeDayPlans(); // Refresh the list
       }
     } catch (error) {
-      console.error("Error accepting plan:", error);
-      console.error("Error response:", error.response?.data);
+      // console.error("Error accepting plan:", error);
+      // console.error("Error response:", error.response?.data);
       toast.error(`Failed to accept day plan: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -480,8 +480,8 @@ const DayPlans = () => {
         getTraineeDayPlans(); // Refresh the list
       }
     } catch (error) {
-      console.error("Error rejecting plan:", error);
-      console.error("Error response:", error.response?.data);
+      // console.error("Error rejecting plan:", error);
+      // console.error("Error response:", error.response?.data);
       toast.error(`Failed to reject day plan: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -655,8 +655,20 @@ const DayPlans = () => {
                                   <div className="mt-3 pt-3 border-t">
                                     <h6 className="font-medium text-sm text-gray-700 mb-2">Additional Activities</h6>
                                     {(() => {
+                                      // Comprehensive debugging
+                                      // console.log('=== CHECKBOX DEBUG START ===');
+                                      // console.log('Plan ID:', plan._id);
+                                      // console.log('Task Index:', taskIndex);
+                                      // console.log('Task Object:', task);
+                                      // console.log('Task ID from task object:', task.id);
+                                      // console.log('Task _id from task object:', task._id);
+                                      // console.log('All plan checkboxes:', plan.checkboxes);
+                                      // console.log('Checkboxes type:', typeof plan.checkboxes);
+                                      // console.log('Checkboxes keys:', Object.keys(plan.checkboxes || {}));
+                                      
                                       // Handle different checkbox data structures
                                       if (!plan.checkboxes) {
+                                      //  console.log('No checkboxes object found');
                                         return (
                                           <div className="text-center py-2 text-gray-500">
                                             <p className="text-xs">No additional activities for this task</p>
@@ -664,15 +676,37 @@ const DayPlans = () => {
                                         );
                                       }
 
-                                      // Check if checkboxes exist for this task
-                                      const taskCheckboxes = plan.checkboxes[taskIndex] || plan.checkboxes[`task_${taskIndex}`] || plan.checkboxes[task._id];
-                                      
-                                      console.log(`Task ${taskIndex} checkboxes for plan ${plan._id}:`, {
+                                      // Try all possible keys for task identification
+                                      const possibleKeys = [
                                         taskIndex,
-                                        taskId: task._id,
-                                        allCheckboxes: plan.checkboxes,
-                                        taskCheckboxes: taskCheckboxes
-                                      });
+                                        String(taskIndex),
+                                        `task_${taskIndex}`,
+                                        `task_${String(taskIndex)}`,
+                                        task._id,
+                                        task.id,
+                                        task._id?.toString(),
+                                        task.id?.toString()
+                                      ];
+                                      
+                                    //  console.log('Trying possible keys:', possibleKeys);
+                                    //  console.log('Available checkbox keys in plan:', Object.keys(plan.checkboxes));
+                                      
+                                      let taskCheckboxes = null;
+                                      let foundKey = null;
+                                      
+                                      for (const key of possibleKeys) {
+                                      //  console.log(`Checking key "${key}":`, plan.checkboxes[key] ? 'FOUND' : 'NOT FOUND');
+                                        if (plan.checkboxes[key]) {
+                                          taskCheckboxes = plan.checkboxes[key];
+                                          foundKey = key;
+                                       //   console.log(`Found checkboxes with key: ${key}`);
+                                          break;
+                                        }
+                                      }
+                                      
+                                    //  console.log('Final taskCheckboxes:', taskCheckboxes);
+                                    //  console.log('Found key:', foundKey);
+                                     // console.log('=== CHECKBOX DEBUG END ===');
                                       
                                       if (!taskCheckboxes || (Array.isArray(taskCheckboxes) && taskCheckboxes.length === 0) || (typeof taskCheckboxes === 'object' && Object.keys(taskCheckboxes).length === 0)) {
                                         return (
@@ -814,24 +848,30 @@ const DayPlans = () => {
                   <div className="flex flex-col h-full">
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-medium text-sm leading-tight">{plan.title}</h4>
+                        <h4 className="font-medium text-sm leading-tight">
+                          {plan.trainee?.name || 'Unknown Trainee'}
+                        </h4>
                         <span className={`px-2 py-1 text-xs rounded ml-2 flex-shrink-0 ${
-                          plan.status === 'published' ? 'bg-green-100 text-green-800' :
-                          plan.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                          'bg-yellow-100 text-yellow-800'
+                          plan.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          plan.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                          plan.status === 'pending' ? 'bg-blue-100 text-blue-800' :
+                          plan.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
                         }`}>
                           {plan.status}
                         </span>
                   </div>
-                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{plan.description}</p>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        {plan.trainee?.email || 'No email'}
+                      </p>
                       <div className="text-xs text-gray-500 mb-3">
                         <div className="flex items-center mb-1">
                           <LuCalendar className="w-3 h-3 mr-1" />
                           {moment(plan.date).format('MMM DD, YYYY')}
                 </div>
                         <div className="flex items-center">
-                          <LuClock className="w-3 h-3 mr-1" />
-                          {plan.startTime} - {plan.endTime}
+                          <LuFileText className="w-3 h-3 mr-1" />
+                          Created by: {plan.createdBy === 'trainer' ? 'Trainer' : 'Trainee'}
             </div>
             </div>
                     </div>
@@ -841,11 +881,14 @@ const DayPlans = () => {
                       </div>
                       <div className="flex space-x-1">
                         <button
-                          onClick={() => handleTraineeEdit(plan)}
+                          onClick={() => {
+                            setSelectedTraineePlan(plan);
+                            setShowTraineePlanPopup(true);
+                          }}
                           className="p-1 text-gray-400 hover:text-blue-600"
-                          title="Edit"
+                          title="View Details"
                         >
-                          <LuPencil className="w-4 h-4" />
+                          <LuEye className="w-4 h-4" />
               </button>
               <button 
                           onClick={() => handleTraineeDelete(plan._id)}
@@ -1127,9 +1170,9 @@ const DayPlans = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Additional Activities</label>
                 {(() => {
-                  console.log("Rendering checkboxes for plan:", selectedTraineePlan._id);
-                  console.log("Checkboxes data:", selectedTraineePlan.checkboxes);
-                  console.log("Checkboxes keys:", selectedTraineePlan.checkboxes ? Object.keys(selectedTraineePlan.checkboxes) : 'No checkboxes');
+                 // console.log("Rendering checkboxes for plan:", selectedTraineePlan._id);
+                //  console.log("Checkboxes data:", selectedTraineePlan.checkboxes);
+                //  console.log("Checkboxes keys:", selectedTraineePlan.checkboxes ? Object.keys(selectedTraineePlan.checkboxes) : 'No checkboxes');
                   
                   // Handle different checkbox data structures
                   if (!selectedTraineePlan.checkboxes) return false;
@@ -1224,27 +1267,41 @@ const DayPlans = () => {
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4">
-                        <button
-                  onClick={() => setShowTraineePlanPopup(false)}
-                  className="flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
-                        >
-                  <span>Cancel</span>
-                        </button>
-                          <button
-                  onClick={handleRejectPlan}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                          >
-                  Reject
-                          </button>
-                        <button
-                  onClick={handleAcceptPlan}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                        >
-                  Accept
-                        </button>
-                      </div>
+              {/* Action Buttons - Only show if status is not completed */}
+              {selectedTraineePlan.status !== 'completed' && (
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={() => setShowTraineePlanPopup(false)}
+                    className="flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={handleRejectPlan}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={handleAcceptPlan}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Accept
+                  </button>
+                </div>
+              )}
+
+              {/* Show only Cancel button for completed plans */}
+              {selectedTraineePlan.status === 'completed' && (
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={() => setShowTraineePlanPopup(false)}
+                    className="flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors font-medium"
+                  >
+                    <span>Close</span>
+                  </button>
+                </div>
+              )}
                     </div>
                   </div>
         </div>

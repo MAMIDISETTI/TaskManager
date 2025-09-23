@@ -114,6 +114,12 @@ import {
       path: "/trainee/day-plans",
     },
     {
+      id: "u05",
+      label: "Learning Reports",
+      icon: LuTrendingUp,
+      path: "/trainee/learning-reports",
+    },
+    {
       id: "u04",
       label: "Profile & Settings",
       icon: LuUser,

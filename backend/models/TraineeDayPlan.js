@@ -14,6 +14,7 @@ const TraineeDayPlanSchema = new mongoose.Schema(
     
     // Tasks submitted by trainee
     tasks: [{
+      id: { type: String, required: false }, // Frontend task ID for checkbox mapping
       title: { type: String, required: true },
       timeAllocation: { type: String, required: true }, // Format: "9:05am-12:20pm"
       description: { type: String, required: false, default: "" },
@@ -71,9 +72,15 @@ const TraineeDayPlanSchema = new mongoose.Schema(
       overallRemarks: { type: String, default: "" },
       status: { 
         type: String, 
-        enum: ["submitted", "reviewed"], 
+        enum: ["submitted", "approved", "rejected"], 
         default: null 
-      }
+      },
+      reviewedAt: { type: Date, default: null },
+      reviewedBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "User" 
+      },
+      reviewComments: { type: String, default: "" }
     }
   },
   { timestamps: true }
