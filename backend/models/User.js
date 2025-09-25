@@ -76,6 +76,7 @@ const UserSchema = new mongoose.Schema(
     fortnightExams: { type: [mongoose.Schema.Types.Mixed], default: [] },
     dailyQuizzes: { type: [mongoose.Schema.Types.Mixed], default: [] },
     courseLevelExams: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    demo_managements_details: { type: [mongoose.Schema.Types.Mixed], default: [] },
   },
   { timestamps: true }
 );

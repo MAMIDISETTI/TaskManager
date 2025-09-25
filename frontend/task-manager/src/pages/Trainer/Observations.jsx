@@ -38,6 +38,18 @@ const Observations = () => {
     recommendations: ""
   });
 
+  // State to track selected trainee's gender
+  const [selectedTraineeGender, setSelectedTraineeGender] = useState(null);
+
+  // Handle trainee selection and update gender
+  const handleTraineeChange = (traineeId) => {
+    const selectedTrainee = assignedTrainees.find(trainee => trainee._id === traineeId);
+    console.log('Selected trainee:', selectedTrainee);
+    console.log('Trainee genre:', selectedTrainee?.genre);
+    setSelectedTraineeGender(selectedTrainee?.genre || null);
+    setFormData({...formData, traineeId: traineeId});
+  };
+
   // Fetch observations
   const getObservations = async () => {
     try {
@@ -55,6 +67,8 @@ const Observations = () => {
   const getAssignedTrainees = async () => {
     try {
       const res = await axiosInstance.get(API_PATHS.ASSIGNMENTS.GET_TRAINER);
+      console.log('Assigned trainees response:', res.data);
+      console.log('Trainees data:', res.data?.trainees);
       setAssignedTrainees(res.data?.trainees || []);
     } catch (err) {
       console.error("Error loading trainees", err);
@@ -167,6 +181,8 @@ const Observations = () => {
       areasForImprovement: obs.areasForImprovement || [],
       recommendations: obs.recommendations || ""
     });
+    // Set the gender for the selected trainee
+    setSelectedTraineeGender(obs.trainee?.genre || null);
     setShowCreateForm(true);
   };
 
@@ -193,6 +209,7 @@ const Observations = () => {
       areasForImprovement: [],
       recommendations: ""
     });
+    setSelectedTraineeGender(null);
   };
 
   useEffect(() => {
@@ -246,7 +263,7 @@ const Observations = () => {
                 <label className="block text-sm font-medium mb-2">Trainee *</label>
                 <select
                   value={formData.traineeId}
-                  onChange={(e) => setFormData({...formData, traineeId: e.target.value})}
+                  onChange={(e) => handleTraineeChange(e.target.value)}
                   className="w-full p-2 border rounded-md"
                   required
                 >
@@ -365,7 +382,19 @@ const Observations = () => {
 
             {/* Grooming & Professional Appearance */}
             <div className="border rounded-md p-4">
-              <h4 className="font-medium mb-3">Grooming & Professional Appearance</h4>
+              <h4 className="font-medium mb-3">
+                Grooming & Professional Appearance
+                {selectedTraineeGender && (
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    ({selectedTraineeGender === 'Female' ? 'Female' : 'Male'} Details)
+                  </span>
+                )}
+                {/* Debug info */}
+                <div className="text-xs text-gray-400 mt-1">
+                  Debug: Gender = {selectedTraineeGender || 'null'}
+                </div>
+              </h4>
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Dress Code</label>
@@ -423,7 +452,14 @@ const Observations = () => {
               </div>
               
               <div className="mt-4">
-                <label className="block text-sm font-medium mb-2">Grooming Notes</label>
+                <label className="block text-sm font-medium mb-2">
+                  Grooming Notes
+                  {selectedTraineeGender && (
+                    <span className="text-sm font-normal text-gray-600 ml-2">
+                      ({selectedTraineeGender === 'Female' ? 'Female' : 'Male'} specific observations)
+                    </span>
+                  )}
+                </label>
                 <textarea
                   value={formData.grooming.notes}
                   onChange={(e) => setFormData({
@@ -432,7 +468,13 @@ const Observations = () => {
                   })}
                   className="w-full p-2 border rounded-md"
                   rows="2"
-                  placeholder="Additional notes about grooming and appearance"
+                  placeholder={
+                    selectedTraineeGender === 'Female' 
+                      ? "Additional notes about female grooming and professional appearance (e.g., hair styling, makeup appropriateness, jewelry, etc.)"
+                      : selectedTraineeGender === 'Male'
+                      ? "Additional notes about male grooming and professional appearance (e.g., facial hair, hair styling, accessories, etc.)"
+                      : "Additional notes about grooming and appearance"
+                  }
                 />
               </div>
             </div>

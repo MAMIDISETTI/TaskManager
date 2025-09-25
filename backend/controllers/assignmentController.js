@@ -213,7 +213,7 @@ const getTrainerAssignment = async (req, res) => {
     // Get trainer with assigned trainees
     console.log('Looking up trainer...');
     const trainer = await User.findById(trainerId)
-      .populate('assignedTrainees', 'name email employeeId department lastClockIn lastClockOut')
+      .populate('assignedTrainees', 'name email employeeId department genre lastClockIn lastClockOut')
       .select('name email assignedTrainees');
     
     if (!trainer) {

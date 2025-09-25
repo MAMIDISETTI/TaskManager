@@ -138,6 +138,41 @@ export const API_PATHS = {
     UPDATE: (id) => `/api/trainee-dayplans/${id}`,
     SUBMIT: (id) => `/api/trainee-dayplans/${id}/submit`,
     REVIEW: (id) => `/api/trainee-dayplans/${id}/review`,
+    EOD_REVIEW: (id) => `/api/trainee-dayplans/${id}/eod-review`,
     DELETE: (id) => `/api/trainee-dayplans/${id}`,
+  },
+
+  DEMO: {
+    UPLOAD: "/api/demos/upload",
+    GET_ALL: "/api/demos",
+    GET_BY_ID: (id) => `/api/demos/${id}`,
+    UPDATE: (id) => `/api/demos/${id}`,
+    DELETE: (id) => `/api/demos/${id}`,
+    DOWNLOAD: (id) => `/api/demos/${id}/download`,
+    RATE: (id) => `/api/demos/${id}/rate`,
+    FEEDBACK: (id) => `/api/demos/${id}/feedback`,
+    AVAILABLE_SLOTS: "/api/demos/slots/available",
+    REQUEST_SLOT: "/api/demos/slots/request",
+    CANCEL_REQUEST: (id) => `/api/demos/slots/request/${id}/cancel`,
+    OFFLINE_REQUESTS: "/api/demos/slots/requests",
+    REVIEW_SLOT: (id) => `/api/demos/slots/request/${id}/review`,
+  },
+
+  TRAINEE: {
+    CAMPUS_ALLOCATION: "/api/trainee/campus-allocation",
+  },
+  CAMPUS: {
+    CREATE: "/api/campus",
+    GET_ALL: "/api/campus",
+    GET_BY_ID: (id) => `/api/campus/${id}`,
+    UPDATE: (id) => `/api/campus/${id}`,
+    DELETE: (id) => `/api/campus/${id}`,
+  },
+  ALLOCATION: {
+    CREATE: "/api/allocation",
+    GET_ALL: "/api/allocation",
+    GET_BY_ID: (id) => `/api/allocation/${id}`,
+    UPDATE: (id) => `/api/allocation/${id}`,
+    DELETE: (id) => `/api/allocation/${id}`,
   },
 };

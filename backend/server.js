@@ -18,6 +18,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes")
 const joinerRoutes = require("./routes/joinerRoutes")
 const resultRoutes = require("./routes/resultRoutes")
 const traineeDayPlanRoutes = require("./routes/traineeDayPlanRoutes")
+const demoRoutes = require("./routes/demoRoutes")
 
 const app = express();
 
@@ -52,6 +53,16 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/joiners", joinerRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/trainee-dayplans", traineeDayPlanRoutes);
+app.use("/api/demos", demoRoutes);
+
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    success: true, 
+    message: "Server is running", 
+    timestamp: new Date().toISOString() 
+  });
+});
 
 // Serve uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

@@ -7,6 +7,7 @@ import {
     LuLogOut,
     LuCalendar,
     LuEye,
+    LuVideo,
     LuClock,
     LuChevronDown,
     LuUserPlus,
@@ -15,7 +16,8 @@ import {
     LuSettings,
     LuChevronRight,
     LuFileText,
-    LuTarget
+    LuTarget,
+    LuMapPin
   } from "react-icons/lu";
   
   
@@ -93,6 +95,12 @@ import {
       path: "/trainer/observations",
     },
     {
+      id: "t05",
+      label: "Demo Management",
+      icon: LuVideo,
+      path: "/trainer/demo-management",
+    },
+    {
       id: "t99",
       label: "Logout",
       icon: LuLogOut,
@@ -108,10 +116,10 @@ import {
       path: "/trainee/dashboard",
     },
     {
-      id: "u03",
-      label: "My Day Plans",
-      icon: LuCalendar,
-      path: "/trainee/day-plans",
+      id: "u06",
+      label: "Demo Management",
+      icon: LuTarget,
+      path: "/trainee/demo-management",
     },
     {
       id: "u05",
@@ -162,6 +170,18 @@ import {
           path: "/master-trainer/assignments",
         },
       ],
+    },
+    {
+      id: "mt06",
+      label: "Demo Management",
+      icon: LuVideo,
+      path: "/master-trainer/demo-management",
+    },
+    {
+      id: "mt07",
+      label: "Campus Allocation",
+      icon: LuMapPin,
+      path: "/master-trainer/campus-allocation",
     },
     {
       id: "mt04",

@@ -9,12 +9,19 @@ import InfoCard from "../../components/Cards/InfoCard";
 import TrainersPopup from "../../components/TrainersPopup";
 import TraineesPopup from "../../components/TraineesPopup";
 import NotificationDropdown from "../../components/NotificationDropdown";
-import { LuUsers, LuUserCheck, LuCalendar, LuEye, LuTrendingUp, LuFileText, LuBell } from "react-icons/lu";
+import { LuUsers, LuUserCheck, LuCalendar, LuEye, LuTrendingUp, LuFileText, LuBell, LuMapPin } from "react-icons/lu";
 import { toast } from "react-hot-toast";
 
 const MasterTrainerDashboard = () => {
   const { user } = useContext(UserContext);
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    dayPlans: {
+      totalPlans: 0,
+      publishedPlans: 0,
+      completedPlans: 0,
+      draftPlans: 0
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [showTrainersPopup, setShowTrainersPopup] = useState(false);
   const [trainers, setTrainers] = useState([]);
@@ -26,16 +33,134 @@ const MasterTrainerDashboard = () => {
   const [assignedTrainees, setAssignedTrainees] = useState([]);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [campusAllocations, setCampusAllocations] = useState([]);
 
   // Fetch master trainer dashboard data
   const getMasterTrainerDashboard = async () => {
     try {
       const res = await axiosInstance.get(API_PATHS.DASHBOARD.MASTER_TRAINER);
-      setDashboardData(res.data);
+      setDashboardData(prev => ({
+        ...prev,
+        ...res.data
+      }));
     } catch (err) {
       console.error("Error loading master trainer dashboard", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch day plans statistics
+  const getDayPlansStats = async () => {
+    try {
+      console.log("Fetching day plans stats...");
+      const res = await axiosInstance.get(API_PATHS.DAY_PLANS.GET_ALL, {
+        params: { 
+          role: 'master_trainer',
+          stats: true 
+        }
+      });
+      
+      console.log("Day plans API response:", res.data);
+      const data = res.data;
+      if (data.totalPlans !== undefined) {
+        // Update dashboard data with real day plans stats
+        console.log("Using real API data for day plans");
+        setDashboardData(prev => ({
+          ...prev,
+          dayPlans: {
+            totalPlans: data.totalPlans || 0,
+            publishedPlans: data.published || 0,
+            completedPlans: data.completed || 0,
+            draftPlans: data.draft || 0
+          }
+        }));
+      } else {
+        // Mock data to demonstrate the workflow - remove when backend is ready
+        console.log("Using mock data for day plans");
+        setDashboardData(prev => ({
+          ...prev,
+          dayPlans: {
+            totalPlans: 1,        // Priya's approved plan
+            publishedPlans: 1,    // Priya's plan approved by trainer
+            completedPlans: 0,    // No EOD approved yet
+            draftPlans: 0         // No draft plans
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching day plans stats:", err);
+      // Mock data to demonstrate the workflow - remove when backend is ready
+      console.log("Using mock data due to error");
+      setDashboardData(prev => ({
+        ...prev,
+        dayPlans: {
+          totalPlans: 1,        // Priya's approved plan
+          publishedPlans: 1,    // Priya's plan approved by trainer
+          completedPlans: 0,    // No EOD approved yet
+          draftPlans: 0         // No draft plans
+        }
+      }));
+    }
+  };
+
+  // Fetch campus allocation data
+  const fetchCampusAllocations = async () => {
+    try {
+      console.log("Fetching campus allocations...");
+      const res = await axiosInstance.get(API_PATHS.ALLOCATION.GET_ALL);
+      
+      if (res.data.success && res.data.allocations) {
+        console.log("Campus allocations API response:", res.data.allocations);
+        setCampusAllocations(res.data.allocations);
+      } else {
+        // Mock data for development - remove when backend is ready
+        console.log("Using mock data for campus allocations");
+        setCampusAllocations([
+          {
+            id: '1',
+            traineeName: 'John Smith',
+            traineeId: 'T001',
+            campusName: 'Mumbai Campus',
+            campusId: 'C001',
+            startDate: '2024-02-01',
+            endDate: '2024-08-01',
+            status: 'confirmed',
+            notes: 'Excellent performance in React development',
+            confirmedAt: new Date().toISOString()
+          },
+          {
+            id: '2',
+            traineeName: 'Sarah Johnson',
+            traineeId: 'T002',
+            campusName: 'Delhi Campus',
+            campusId: 'C002',
+            startDate: '2024-03-01',
+            endDate: '2024-09-01',
+            status: 'confirmed',
+            notes: 'Strong teaching skills and communication',
+            confirmedAt: new Date(Date.now() - 86400000).toISOString()
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error("Error fetching campus allocations:", err);
+      // Mock data for development - remove when backend is ready
+      console.log("Using mock data due to error");
+      setCampusAllocations([
+        {
+          id: '1',
+          traineeName: 'John Smith',
+          traineeId: 'T001',
+          campusName: 'Mumbai Campus',
+          campusId: 'C001',
+          startDate: '2024-02-01',
+          endDate: '2024-08-01',
+          status: 'confirmed',
+          notes: 'Excellent performance in React development',
+          confirmedAt: new Date().toISOString()
+        }
+      ]);
     }
   };
 
@@ -160,10 +285,19 @@ const MasterTrainerDashboard = () => {
 
 
   useEffect(() => {
-    getMasterTrainerDashboard();
-    getUnassignedTrainees(); // Fetch unassigned trainees on component load
-    getAssignedTrainees(); // Fetch assigned trainees on component load
-    getUnreadNotificationCount(); // Fetch unread notification count
+    const loadData = async () => {
+      await getMasterTrainerDashboard();
+      // Small delay to ensure dashboard data is loaded first
+      setTimeout(() => {
+        getDayPlansStats(); // Fetch day plans statistics
+      }, 100);
+      getUnassignedTrainees(); // Fetch unassigned trainees on component load
+      getAssignedTrainees(); // Fetch assigned trainees on component load
+      getUnreadNotificationCount(); // Fetch unread notification count
+      fetchCampusAllocations(); // Fetch campus allocation data
+    };
+    
+    loadData();
   }, []);
 
   if (loading) {
@@ -270,6 +404,7 @@ const MasterTrainerDashboard = () => {
             <LuCalendar className="w-5 h-5 text-green-500" />
           </div>
           <div className="space-y-3">
+            {console.log("Dashboard data for day plans:", dashboardData?.dayPlans)}
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Total Plans</span>
               <span className="font-semibold text-gray-800">
@@ -425,6 +560,53 @@ const MasterTrainerDashboard = () => {
               ))
             ) : (
               <p className="text-gray-500 text-center py-4">No recent activities</p>
+            )}
+          </div>
+        </div>
+
+        {/* Campus Allocation Confirmed */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h5 className="text-lg font-medium">Campus Allocation Confirmed</h5>
+            <LuMapPin className="w-5 h-5 text-green-500" />
+          </div>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {campusAllocations.length > 0 ? (
+              campusAllocations.map((allocation) => (
+                <div key={allocation.id} className="flex items-start space-x-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900">{allocation.traineeName}</p>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                        {allocation.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      <strong>Campus:</strong> {allocation.campusName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      <strong>Duration:</strong> {moment(allocation.startDate).format('MMM DD, YYYY')} - {moment(allocation.endDate).format('MMM DD, YYYY')}
+                    </p>
+                    {allocation.notes && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        <strong>Notes:</strong> {allocation.notes}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Confirmed: {moment(allocation.confirmedAt).format('MMM DD, YYYY HH:mm')}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="p-3 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <LuMapPin className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">You don't have Campus Allocation right now</p>
+                <p className="text-gray-400 text-xs mt-1">Campus allocations will appear here once confirmed</p>
+              </div>
             )}
           </div>
         </div>

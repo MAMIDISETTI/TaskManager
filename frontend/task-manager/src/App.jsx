@@ -5,6 +5,8 @@ import MasterTrainerDashboard from "./pages/MasterTrainer/MasterTrainerDashboard
 import MasterTrainerDayPlans from "./pages/MasterTrainer/DayPlans";
 import Assignments from "./pages/MasterTrainer/Assignments";
 import MasterTrainerObservations from "./pages/MasterTrainer/Observations";
+import MasterTrainerDemoManagement from "./pages/MasterTrainer/DemoManagement";
+import CampusAllocation from "./pages/MasterTrainer/CampusAllocation";
 
 // BOA pages
 import BOADashboard from "./pages/BOA/BOADashboard";
@@ -28,6 +30,7 @@ import ViewTaskDetails from "./pages/User/ViewTaskDetails";
 import TrainerDashboard from "./pages/Trainer/TrainerDashboard";
 import DayPlans from "./pages/Trainer/DayPlans";
 import Observations from "./pages/Trainer/Observations";
+import TrainerDemoManagement from "./pages/Trainer/DemoManagement";
 import LoggedHoursDashboard from "./pages/Trainer/LoggedHoursDashboard";
 import WeeklyOffDashboard from "./pages/Trainer/WeeklyOffDashboard";
 import LateByDashboard from "./pages/Trainer/LateByDashboard";
@@ -35,6 +38,7 @@ import AbsentDashboard from "./pages/Trainer/AbsentDashboard";
 
 // Trainee pages
 import TraineeMainDashboard from "./pages/Trainee/TraineeMainDashboard";
+import DemoManagement from "./pages/Trainee/DemoManagement";
 import LearningReports from "./pages/Trainee/LearningReports";
 import ProfileSettings from "./pages/Trainee/ProfileSettings";
 
@@ -61,6 +65,8 @@ const App = () => {
               <Route path="/master-trainer/day-plans" element={<MasterTrainerDayPlans />} />
               <Route path="/master-trainer/observations" element={<MasterTrainerObservations />} />
               <Route path="/master-trainer/assignments" element={<Assignments />} />
+              <Route path="/master-trainer/demo-management" element={<MasterTrainerDemoManagement />} />
+              <Route path="/master-trainer/campus-allocation" element={<CampusAllocation />} />
               <Route path="/master-trainer/reports" element={<CreateTask />} />
               <Route path="/master-trainer/users" element={<ManageUsers />} />
             </Route>
@@ -80,6 +86,7 @@ const App = () => {
               <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
               <Route path="/trainer/day-plans" element={<DayPlans />} />
               <Route path="/trainer/observations" element={<Observations />} />
+              <Route path="/trainer/demo-management" element={<TrainerDemoManagement />} />
               <Route path="/trainer/logged-hours-dashboard" element={<LoggedHoursDashboard />} />
               <Route path="/trainer/weekly-off-dashboard" element={<WeeklyOffDashboard />} />
               <Route path="/trainer/late-by-dashboard" element={<LateByDashboard />} />
@@ -90,6 +97,7 @@ const App = () => {
             <Route element={<PrivateRoute allowedRoles={["trainee"]} />}>
               <Route path="/trainee/dashboard" element={<TraineeMainDashboard />} />
               <Route path="/trainee/day-plans" element={<MyTasks />} />
+              <Route path="/trainee/demo-management" element={<DemoManagement />} />
               <Route path="/trainee/learning-reports" element={<LearningReports />} />
               <Route path="/trainee/attendance" element={<ViewTaskDetails />} />
               <Route path="/trainee/profile-settings" element={<ProfileSettings />} />

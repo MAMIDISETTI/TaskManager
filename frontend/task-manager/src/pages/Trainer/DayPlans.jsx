@@ -236,13 +236,16 @@ const DayPlans = () => {
     setProcessingPlans(prev => ({ ...prev, [planId]: 'accepting' }));
     
     try {
-      const response = await axiosInstance.put(
-        `${API_PATHS.TRAINEE_DAY_PLANS.REVIEW(planId)}`,
-        {
-          status: 'approved',
-          reviewComments: 'Approved by trainer'
-        }
-      );
+      // Find the plan to check if it has EOD updates and correct status
+      const plan = traineeDayPlans.find(p => p._id === planId);
+      const endpoint = (plan?.eodUpdate && plan?.status === 'pending') ? 
+        API_PATHS.TRAINEE_DAY_PLANS.EOD_REVIEW(planId) :
+        API_PATHS.TRAINEE_DAY_PLANS.REVIEW(planId);
+      
+      const response = await axiosInstance.put(endpoint, {
+        status: 'approved',
+        reviewComments: 'Approved by trainer'
+      });
 
       if (response.data.message) {
         toast.success('Day plan accepted successfully');
@@ -275,13 +278,16 @@ const DayPlans = () => {
     setProcessingPlans(prev => ({ ...prev, [planId]: 'rejecting' }));
 
     try {
-      const response = await axiosInstance.put(
-        `${API_PATHS.TRAINEE_DAY_PLANS.REVIEW(planId)}`,
-        {
-          status: 'rejected',
-          reviewComments: remarks
-        }
-      );
+      // Find the plan to check if it has EOD updates and correct status
+      const plan = traineeDayPlans.find(p => p._id === planId);
+      const endpoint = (plan?.eodUpdate && plan?.status === 'pending') ? 
+        API_PATHS.TRAINEE_DAY_PLANS.EOD_REVIEW(planId) :
+        API_PATHS.TRAINEE_DAY_PLANS.REVIEW(planId);
+      
+      const response = await axiosInstance.put(endpoint, {
+        status: 'rejected',
+        reviewComments: remarks
+      });
 
       if (response.data.message) {
         toast.success('Day plan rejected successfully');
@@ -438,7 +444,13 @@ const DayPlans = () => {
     if (!selectedTraineePlan) return;
     
     try {
-      const res = await axiosInstance.put(API_PATHS.TRAINEE_DAY_PLANS.REVIEW(selectedTraineePlan._id), {
+      // Use EOD review endpoint only if the day plan has EOD updates AND status is pending
+      // Otherwise use regular review endpoint
+      const endpoint = (selectedTraineePlan.eodUpdate && selectedTraineePlan.status === 'pending') ? 
+        API_PATHS.TRAINEE_DAY_PLANS.EOD_REVIEW(selectedTraineePlan._id) :
+        API_PATHS.TRAINEE_DAY_PLANS.REVIEW(selectedTraineePlan._id);
+      
+      const res = await axiosInstance.put(endpoint, {
         status: "approved",
         reviewComments: reviewRemarks
       });
@@ -467,7 +479,13 @@ const DayPlans = () => {
     }
     
     try {
-      const res = await axiosInstance.put(API_PATHS.TRAINEE_DAY_PLANS.REVIEW(selectedTraineePlan._id), {
+      // Use EOD review endpoint only if the day plan has EOD updates AND status is pending
+      // Otherwise use regular review endpoint
+      const endpoint = (selectedTraineePlan.eodUpdate && selectedTraineePlan.status === 'pending') ? 
+        API_PATHS.TRAINEE_DAY_PLANS.EOD_REVIEW(selectedTraineePlan._id) :
+        API_PATHS.TRAINEE_DAY_PLANS.REVIEW(selectedTraineePlan._id);
+      
+      const res = await axiosInstance.put(endpoint, {
         status: "rejected",
         reviewComments: reviewRemarks
       });
