@@ -319,8 +319,11 @@ const MasterTrainerDemoManagement = () => {
       if (response.data.success) {
         console.log('Final review submitted successfully:', response.data);
         
-        // Refresh data
-        await fetchTrainerApprovedDemos();
+        // Refresh data for both Final Reviews and All Demos tabs
+        await Promise.all([
+          fetchTrainerApprovedDemos(),
+          fetchDemoSessions()
+        ]);
 
         toast.success(`Demo ${finalReviewData.action === 'approve' ? 'approved' : 'rejected'} successfully!`);
         closeFinalReviewModal();
@@ -722,15 +725,15 @@ const MasterTrainerDemoManagement = () => {
                             <div className="flex items-center gap-4 text-sm text-gray-500">
                               <span className="flex items-center gap-1">
                                 <LuCalendar className="w-4 h-4" />
-                                {new Date(session.sessionDate).toLocaleDateString()}
+                                {session.uploadedAt ? new Date(session.uploadedAt).toLocaleDateString() : 'N/A'}
                               </span>
                               <span className="flex items-center gap-1">
                                 <LuClock className="w-4 h-4" />
-                                {session.duration}
+                                {session.duration || 'N/A'}
                               </span>
                               <span className="flex items-center gap-1">
                                 <LuMapPin className="w-4 h-4" />
-                                {session.location}
+                                {session.location || 'N/A'}
                               </span>
                             </div>
                           </div>

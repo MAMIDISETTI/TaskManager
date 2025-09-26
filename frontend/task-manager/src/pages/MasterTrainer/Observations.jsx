@@ -79,60 +79,7 @@ const MasterTrainerObservations = () => {
       if (response.data.success) {
         setObservations(response.data.observations);
       } else {
-        // Mock data for development
-        setObservations([
-          {
-            id: '1',
-            traineeId: '1',
-            traineeName: 'John Smith',
-            traineeEmail: 'john.smith@example.com',
-            category: 'cultural',
-            title: 'Excellent team collaboration',
-            description: 'Demonstrated strong cultural adaptation skills during team projects. Showed respect for diverse perspectives and actively contributed to group discussions.',
-            behaviorType: 'positive',
-            severity: 'low',
-            impact: 'high',
-            recommendations: 'Continue fostering inclusive team environment. Consider for leadership roles.',
-            followUpRequired: false,
-            followUpDate: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: '2',
-            traineeId: '2',
-            traineeName: 'Sarah Johnson',
-            traineeEmail: 'sarah.johnson@example.com',
-            category: 'behavioral',
-            title: 'Punctuality concerns',
-            description: 'Consistently late for meetings and training sessions. This behavior affects team productivity and project timelines.',
-            behaviorType: 'negative',
-            severity: 'medium',
-            impact: 'medium',
-            recommendations: 'Schedule one-on-one meeting to discuss time management. Provide resources for improving punctuality.',
-            followUpRequired: true,
-            followUpDate: new Date(Date.now() + 604800000).toISOString(),
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString()
-          },
-          {
-            id: '3',
-            traineeId: '3',
-            traineeName: 'Mike Wilson',
-            traineeEmail: 'mike.wilson@example.com',
-            category: 'professional',
-            title: 'Strong technical leadership',
-            description: 'Took initiative in mentoring junior trainees and provided excellent technical guidance during code reviews.',
-            behaviorType: 'positive',
-            severity: 'low',
-            impact: 'high',
-            recommendations: 'Consider for senior technical roles. Continue mentoring activities.',
-            followUpRequired: false,
-            followUpDate: null,
-            createdAt: new Date(Date.now() - 172800000).toISOString(),
-            updatedAt: new Date(Date.now() - 172800000).toISOString()
-          }
-        ]);
+        setObservations([]);
       }
     } catch (error) {
       console.error('Error fetching observations:', error);
@@ -148,13 +95,7 @@ const MasterTrainerObservations = () => {
       if (response.data.success) {
         setTrainees(response.data.users);
       } else {
-        // Mock data for development
-        setTrainees([
-          { id: '1', name: 'John Smith', email: 'john.smith@example.com', employeeId: 'T001' },
-          { id: '2', name: 'Sarah Johnson', email: 'sarah.johnson@example.com', employeeId: 'T002' },
-          { id: '3', name: 'Mike Wilson', email: 'mike.wilson@example.com', employeeId: 'T003' },
-          { id: '4', name: 'Emily Davis', email: 'emily.davis@example.com', employeeId: 'T004' }
-        ]);
+        setTrainees([]);
       }
     } catch (error) {
       console.error('Error fetching trainees:', error);

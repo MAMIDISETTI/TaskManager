@@ -41,31 +41,21 @@ const MasterTrainerDayPlans = () => {
       });
       
       const data = res.data;
-      // Use real data if available, otherwise show mock data for demonstration
-      if (data.totalPlans !== undefined) {
-        setTraineeStats({
-          totalPlans: data.totalPlans || 0,        // All approved plans
-          published: data.published || 0,          // Plans approved by trainers
-          completed: data.completed || 0,          // Plans with approved EOD
-          draft: data.draft || 0                   // Draft plans
-        });
-      } else {
-        // Mock data to demonstrate the workflow - remove when backend is ready
+      // Use real data from API
       setTraineeStats({
-          totalPlans: 1,        // Priya's approved plan
-          published: 1,         // Priya's plan approved by trainer
-          completed: 0,         // No EOD approved yet
-          draft: 0              // No draft plans
-        });
-      }
+        totalPlans: data.totalPlans || 0,        // All approved plans
+        published: data.published || 0,          // Plans approved by trainers
+        completed: data.completed || 0,          // Plans with approved EOD
+        draft: data.draft || 0                   // Draft plans
+      });
     } catch (err) {
       console.error("Error fetching trainee day plan stats:", err);
-      // Mock data to demonstrate the workflow - remove when backend is ready
+      // Set empty stats on error
       setTraineeStats({
-        totalPlans: 1,        // Priya's approved plan
-        published: 1,         // Priya's plan approved by trainer
-        completed: 0,         // No EOD approved yet
-        draft: 0              // No draft plans
+        totalPlans: 0,
+        published: 0,
+        completed: 0,
+        draft: 0
       });
     }
   };
@@ -177,53 +167,11 @@ const MasterTrainerDayPlans = () => {
       if (res.data.success && res.data.dayPlans) {
         setDayPlanDetails(res.data.dayPlans);
       } else {
-        // Mock data to demonstrate the workflow - remove when backend is ready
-        const today = new Date().toISOString().split('T')[0];
-        if (date === today) {
-          setDayPlanDetails([
-            {
-              id: '1',
-              traineeName: 'Priya Sharma',
-              traineeId: 'N/A',
-              department: 'N/A',
-              date: date,
-              status: 'published',
-              tasks: [
-                { id: '1', title: 'Complete React component development', status: 'completed', priority: 'high' }
-              ],
-              submittedAt: new Date().toISOString(),
-              approvedAt: new Date(Date.now() - 3600000).toISOString(),
-              completedAt: null
-            }
-          ]);
-        } else {
-          setDayPlanDetails([]);
-        }
+        setDayPlanDetails([]);
       }
     } catch (err) {
       console.error("Error fetching day plan details:", err);
-      // Mock data to demonstrate the workflow - remove when backend is ready
-      const today = new Date().toISOString().split('T')[0];
-      if (date === today) {
-        setDayPlanDetails([
-          {
-            id: '1',
-            traineeName: 'Priya Sharma',
-            traineeId: 'N/A',
-            department: 'N/A',
-            date: date,
-            status: 'published',
-            tasks: [
-              { id: '1', title: 'Complete React component development', status: 'completed', priority: 'high' }
-            ],
-            submittedAt: new Date().toISOString(),
-            approvedAt: new Date(Date.now() - 3600000).toISOString(),
-            completedAt: null
-          }
-        ]);
-      } else {
-        setDayPlanDetails([]);
-      }
+      setDayPlanDetails([]);
     }
   };
 

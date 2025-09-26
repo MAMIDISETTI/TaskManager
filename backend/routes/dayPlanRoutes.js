@@ -12,9 +12,9 @@ const {
   deleteDayPlan
 } = require("../controllers/dayPlanController");
 
-// Trainer routes
+// Trainer and Master Trainer routes
 router.post("/", protect, trainerOnly, createDayPlan);
-router.get("/", protect, trainerOnly, getDayPlans);
+router.get("/", protect, requireRoles(['trainer', 'master_trainer']), getDayPlans);
 router.get("/:id", protect, requireRoles(["trainer", "trainee"]), getDayPlan);
 router.put("/:id", protect, trainerOnly, updateDayPlan);
 router.put("/:id/publish", protect, trainerOnly, publishDayPlan);

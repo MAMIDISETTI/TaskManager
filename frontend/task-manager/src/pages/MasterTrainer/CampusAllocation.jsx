@@ -41,13 +41,55 @@ const CampusAllocation = () => {
 
   const fetchTrainees = async () => {
     try {
-      const response = await axiosInstance.get(API_PATHS.USERS.GET_ALL, {
+      console.log('Fetching trainees...');
+      const response = await axiosInstance.get(API_PATHS.USERS.LIST, {
         params: { role: 'trainee' }
       });
-      if (response.data.success) {
-        setTrainees(response.data.users);
+      console.log('Trainees API response:', response.data);
+      if (response.data.users) {
+        const trainees = response.data.users;
+        console.log('Trainees data:', trainees);
+        
+        // Fetch allocations to determine campus allocation status
+        try {
+          const allocationResponse = await axiosInstance.get(API_PATHS.ALLOCATION.GET_ALL);
+          if (allocationResponse.data.success && allocationResponse.data.allocations) {
+            // Create a map of trainee ID to campus name
+            const allocationMap = {};
+            allocationResponse.data.allocations.forEach(allocation => {
+              allocationMap[allocation.traineeId] = allocation.campusName;
+            });
+            
+            // Add allocatedCampus field to each trainee
+            const traineesWithAllocation = trainees.map(trainee => ({
+              ...trainee,
+              allocatedCampus: allocationMap[trainee._id || trainee.id] || null
+            }));
+            
+            console.log('Setting trainees with allocation:', traineesWithAllocation);
+            setTrainees(traineesWithAllocation);
+          } else {
+            // If no allocations, set allocatedCampus to null for all trainees
+            const traineesWithAllocation = trainees.map(trainee => ({
+              ...trainee,
+              allocatedCampus: null
+            }));
+            console.log('Setting trainees without allocation:', traineesWithAllocation);
+            setTrainees(traineesWithAllocation);
+          }
+        } catch (allocationError) {
+          console.error('Error fetching allocations:', allocationError);
+          // If allocation fetch fails, set allocatedCampus to null for all trainees
+          const traineesWithAllocation = trainees.map(trainee => ({
+            ...trainee,
+            allocatedCampus: null
+          }));
+          console.log('Setting trainees after allocation error:', traineesWithAllocation);
+          setTrainees(traineesWithAllocation);
+        }
       } else {
         // Mock data for development
+        console.log('Using mock data for trainees');
         setTrainees([
           {
             id: '1',
@@ -89,6 +131,7 @@ const CampusAllocation = () => {
       }
     } catch (error) {
       console.error('Error fetching trainees:', error);
+      console.log('Setting empty trainees array due to error');
       setTrainees([]);
     }
   };
@@ -181,12 +224,21 @@ const CampusAllocation = () => {
     if (!selectedTrainee || !selectedCampus || !allocationDate) return;
 
     try {
+      console.log('Creating allocation with:', {
+        traineeId: selectedTrainee._id || selectedTrainee.id,
+        traineeAuthorId: selectedTrainee.author_id,
+        campusId: selectedCampus,
+        allocatedDate: allocationDate
+      });
+
       const response = await axiosInstance.post(API_PATHS.ALLOCATION.CREATE, {
-        traineeId: selectedTrainee.id,
+        traineeId: selectedTrainee._id || selectedTrainee.id,
         campusId: selectedCampus,
         allocatedDate: allocationDate,
         status: 'confirmed'
       });
+
+      console.log('Allocation response:', response.data);
 
       if (response.data.success) {
         fetchTrainees();
@@ -198,6 +250,15 @@ const CampusAllocation = () => {
       }
     } catch (error) {
       console.error('Error allocating campus:', error);
+    }
+  };
+
+  const handleDebugAllocations = async () => {
+    try {
+      const response = await axiosInstance.get('/api/allocation/debug');
+      console.log('Debug allocations response:', response.data);
+    } catch (error) {
+      console.error('Error debugging allocations:', error);
     }
   };
 
@@ -265,7 +326,7 @@ const CampusAllocation = () => {
         {/* Campus Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {campuses.map((campus) => (
-            <div key={campus.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div key={campus._id || campus.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-medium text-gray-900">{campus.name}</h3>
                 <LuBuilding className="w-5 h-5 text-blue-600" />
@@ -330,6 +391,12 @@ const CampusAllocation = () => {
                 <LuUser className="w-4 h-4 mr-2" />
                 Allocate Campus
               </button>
+              <button
+                onClick={handleDebugAllocations}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
+              >
+                Debug Allocations
+              </button>
             </div>
           </div>
         </div>
@@ -341,17 +408,19 @@ const CampusAllocation = () => {
           </div>
           <div className="divide-y divide-gray-200">
             {filteredTrainees.map((trainee) => (
-              <div key={trainee.id} className="p-6 hover:bg-gray-50">
+              <div key={trainee._id || trainee.id} className="p-6 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-medium text-gray-900">{trainee.name}</h3>
                       <span className="text-sm text-gray-500">({trainee.employeeId})</span>
-                      {trainee.allocatedCampus && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                          Allocated
-                        </span>
-                      )}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        trainee.allocatedCampus 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {trainee.allocatedCampus ? 'Allocated' : 'Not Allocated'}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{trainee.department}</p>
                     <p className="text-sm text-gray-500">{trainee.email}</p>
@@ -414,17 +483,17 @@ const CampusAllocation = () => {
                       Trainee
                     </label>
                     <select
-                      value={selectedTrainee?.id || ''}
+                      value={selectedTrainee?._id || selectedTrainee?.id || ''}
                       onChange={(e) => {
-                        const trainee = trainees.find(t => t.id === e.target.value);
+                        const trainee = trainees.find(t => (t._id || t.id) === e.target.value);
                         setSelectedTrainee(trainee);
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select Trainee</option>
-                      {trainees.filter(t => !t.allocatedCampus).map((trainee) => (
-                        <option key={trainee.id} value={trainee.id}>
-                          {trainee.name} ({trainee.employeeId})
+                      {trainees.map((trainee) => (
+                        <option key={trainee._id || trainee.id} value={trainee._id || trainee.id}>
+                          {trainee.name} ({trainee.employeeId}) - {trainee.allocatedCampus ? 'Allocated' : 'Not Allocated'}
                         </option>
                       ))}
                     </select>
@@ -441,7 +510,7 @@ const CampusAllocation = () => {
                     >
                       <option value="">Select Campus</option>
                       {campuses.map((campus) => (
-                        <option key={campus.id} value={campus.id}>
+                        <option key={campus._id || campus.id} value={campus._id || campus.id}>
                           {campus.name} - {campus.location}
                         </option>
                       ))}

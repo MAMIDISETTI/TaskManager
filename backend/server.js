@@ -19,13 +19,19 @@ const joinerRoutes = require("./routes/joinerRoutes")
 const resultRoutes = require("./routes/resultRoutes")
 const traineeDayPlanRoutes = require("./routes/traineeDayPlanRoutes")
 const demoRoutes = require("./routes/demoRoutes")
+const campusRoutes = require("./routes/campusRoutes")
+const allocationRoutes = require("./routes/allocationRoutes")
 
 const app = express();
 
 // Middleware to handle CORS
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173", // Specific origin required when credentials: true
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:5173",
+      "https://task-manager-frontend.vercel.app",
+      "https://task-manager-frontend-git-main.vercel.app"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies to be sent
@@ -54,6 +60,8 @@ app.use("/api/joiners", joinerRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/trainee-dayplans", traineeDayPlanRoutes);
 app.use("/api/demos", demoRoutes);
+app.use("/api/campus", campusRoutes);
+app.use("/api/allocation", allocationRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

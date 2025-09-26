@@ -4,7 +4,7 @@ import Cookies from "js-cookie";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 60000, // 60 seconds for video uploads
   withCredentials: true, // Send cookies with requests
   headers: {
     "Content-Type": "application/json",

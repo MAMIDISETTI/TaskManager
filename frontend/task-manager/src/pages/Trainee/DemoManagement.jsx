@@ -64,10 +64,16 @@ const DemoManagement = () => {
     fetchDemos();
     fetchOfflineSlotRequests();
     fetchAvailableSlots();
-    fetchCampusAllocation();
     fetchFeedback();
     fetchRatings();
   }, []);
+
+  // Load campus allocation when user is available
+  useEffect(() => {
+    if (user?.id || user?.author_id) {
+      fetchCampusAllocation();
+    }
+  }, [user]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -288,21 +294,34 @@ const DemoManagement = () => {
 
   const fetchCampusAllocation = async () => {
     try {
-      const response = await axiosInstance.get('/api/user/profile');
-      if (response.data.success && response.data.user.company_allocated_details) {
-        const allocationDetails = response.data.user.company_allocated_details;
-        if (allocationDetails.length > 0) {
-          const latestAllocation = allocationDetails[allocationDetails.length - 1];
-          setCampusAllocation({
-            campusName: latestAllocation.campusName || 'Not Specified',
-            deploymentDate: latestAllocation.deploymentDate || new Date().toISOString(),
-            status: latestAllocation.status || 'confirmed',
-            notes: latestAllocation.notes || ''
-          });
-        } else {
-          setCampusAllocation(null);
-        }
+      const traineeId = user?.id || user?.author_id;
+      console.log('Fetching campus allocation for trainee:', traineeId);
+      console.log('User object:', user);
+      
+      if (!traineeId) {
+        console.log('No trainee ID available, skipping campus allocation fetch');
+        setCampusAllocation(null);
+        return;
+      }
+      
+      const response = await axiosInstance.get(API_PATHS.ALLOCATION.GET_ALL, {
+        params: { traineeId: traineeId }
+      });
+      
+      console.log('Campus allocation API response:', response.data);
+      
+      if (response.data.success && response.data.allocations && response.data.allocations.length > 0) {
+        // Get the latest allocation (most recent)
+        const latestAllocation = response.data.allocations[0]; // Assuming they're sorted by date desc
+        setCampusAllocation({
+          campusName: latestAllocation.campusName || 'Not Specified',
+          deploymentDate: latestAllocation.deploymentDate || latestAllocation.allocatedDate || new Date().toISOString(),
+          status: latestAllocation.status || 'confirmed',
+          notes: latestAllocation.notes || ''
+        });
+        console.log('Campus allocation set:', latestAllocation);
       } else {
+        console.log('No campus allocation found');
         setCampusAllocation(null);
       }
     } catch (error) {

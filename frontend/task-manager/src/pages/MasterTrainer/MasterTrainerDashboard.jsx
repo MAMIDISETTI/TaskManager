@@ -76,91 +76,74 @@ const MasterTrainerDashboard = () => {
           }
         }));
       } else {
-        // Mock data to demonstrate the workflow - remove when backend is ready
-        console.log("Using mock data for day plans");
+        console.log("No day plans data available");
         setDashboardData(prev => ({
           ...prev,
           dayPlans: {
-            totalPlans: 1,        // Priya's approved plan
-            publishedPlans: 1,    // Priya's plan approved by trainer
-            completedPlans: 0,    // No EOD approved yet
-            draftPlans: 0         // No draft plans
+            totalPlans: 0,
+            publishedPlans: 0,
+            completedPlans: 0,
+            draftPlans: 0
           }
         }));
       }
     } catch (err) {
       console.error("Error fetching day plans stats:", err);
-      // Mock data to demonstrate the workflow - remove when backend is ready
-      console.log("Using mock data due to error");
+      console.log("Setting empty day plans data due to error");
       setDashboardData(prev => ({
         ...prev,
         dayPlans: {
-          totalPlans: 1,        // Priya's approved plan
-          publishedPlans: 1,    // Priya's plan approved by trainer
-          completedPlans: 0,    // No EOD approved yet
-          draftPlans: 0         // No draft plans
+          totalPlans: 0,
+          publishedPlans: 0,
+          completedPlans: 0,
+          draftPlans: 0
         }
       }));
     }
   };
 
-  // Fetch campus allocation data
+  // Fetch campus allocation data from company_allocated_details
   const fetchCampusAllocations = async () => {
     try {
-      console.log("Fetching campus allocations...");
-      const res = await axiosInstance.get(API_PATHS.ALLOCATION.GET_ALL);
+      console.log("Fetching campus allocations from company_allocated_details...");
+      const res = await axiosInstance.get(API_PATHS.USERS.LIST, {
+        params: { role: 'trainee' }
+      });
       
-      if (res.data.success && res.data.allocations) {
-        console.log("Campus allocations API response:", res.data.allocations);
-        setCampusAllocations(res.data.allocations);
-      } else {
-        // Mock data for development - remove when backend is ready
-        console.log("Using mock data for campus allocations");
-        setCampusAllocations([
-          {
-            id: '1',
-            traineeName: 'John Smith',
-            traineeId: 'T001',
-            campusName: 'Mumbai Campus',
-            campusId: 'C001',
-            startDate: '2024-02-01',
-            endDate: '2024-08-01',
-            status: 'confirmed',
-            notes: 'Excellent performance in React development',
-            confirmedAt: new Date().toISOString()
-          },
-          {
-            id: '2',
-            traineeName: 'Sarah Johnson',
-            traineeId: 'T002',
-            campusName: 'Delhi Campus',
-            campusId: 'C002',
-            startDate: '2024-03-01',
-            endDate: '2024-09-01',
-            status: 'confirmed',
-            notes: 'Strong teaching skills and communication',
-            confirmedAt: new Date(Date.now() - 86400000).toISOString()
+      if (res.data.success && res.data.users) {
+        console.log("Trainees API response:", res.data.users);
+        
+        // Extract campus allocations from company_allocated_details field
+        const allocations = [];
+        res.data.users.forEach(trainee => {
+          if (trainee.company_allocated_details && trainee.company_allocated_details.length > 0) {
+            trainee.company_allocated_details.forEach((allocation, index) => {
+              allocations.push({
+                id: `${trainee._id}_${index}`,
+                traineeName: trainee.name,
+                traineeId: trainee.employeeId || trainee._id,
+                campusName: allocation.campusName || 'N/A',
+                campusId: allocation.campusId || 'N/A',
+                startDate: allocation.startDate || new Date().toISOString().split('T')[0],
+                endDate: allocation.endDate || new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                status: allocation.status || 'confirmed',
+                notes: allocation.notes || '',
+                confirmedAt: allocation.confirmedAt || new Date().toISOString()
+              });
+            });
           }
-        ]);
+        });
+        
+        console.log("Extracted campus allocations:", allocations);
+        setCampusAllocations(allocations);
+      } else {
+        console.log("No trainees data available");
+        setCampusAllocations([]);
       }
     } catch (err) {
       console.error("Error fetching campus allocations:", err);
-      // Mock data for development - remove when backend is ready
-      console.log("Using mock data due to error");
-      setCampusAllocations([
-        {
-          id: '1',
-          traineeName: 'John Smith',
-          traineeId: 'T001',
-          campusName: 'Mumbai Campus',
-          campusId: 'C001',
-          startDate: '2024-02-01',
-          endDate: '2024-08-01',
-          status: 'confirmed',
-          notes: 'Excellent performance in React development',
-          confirmedAt: new Date().toISOString()
-        }
-      ]);
+      console.log("Setting empty campus allocations due to error");
+      setCampusAllocations([]);
     }
   };
 

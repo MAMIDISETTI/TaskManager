@@ -81,12 +81,77 @@ const createDayPlan = async (req, res) => {
   }
 };
 
-// @desc    Get all day plans for a trainer
+// @desc    Get all day plans for a trainer or master trainer
 // @route   GET /api/dayplans
-// @access  Private (Trainer)
+// @access  Private (Trainer, Master Trainer)
 const getDayPlans = async (req, res) => {
   try {
-    const trainerId = req.user.id;
+    const { role, stats, date, details } = req.query;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // Handle master trainer requests
+    if (role === 'master_trainer' || userRole === 'master_trainer') {
+      if (stats === 'true') {
+        // Return statistics for master trainer
+        const totalPlans = await DayPlan.countDocuments({});
+        const publishedPlans = await DayPlan.countDocuments({ status: 'published' });
+        const completedPlans = await DayPlan.countDocuments({ status: 'completed' });
+        const draftPlans = await DayPlan.countDocuments({ status: 'draft' });
+
+        return res.json({
+          success: true,
+          totalPlans,
+          published: publishedPlans,
+          completed: completedPlans,
+          draft: draftPlans
+        });
+      }
+
+      if (details === 'true' && date) {
+        // Return day plan details for specific date
+        const dayPlans = await DayPlan.find({ 
+          date: {
+            $gte: new Date(date),
+            $lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000)
+          }
+        })
+        .populate('assignedTrainees', 'name email employeeId')
+        .populate('trainer', 'name email');
+
+        const formattedPlans = dayPlans.map(plan => ({
+          id: plan._id,
+          traineeName: plan.assignedTrainees.map(t => t.name).join(', '),
+          traineeId: 'N/A',
+          department: 'N/A',
+          date: plan.date.toISOString().split('T')[0],
+          status: plan.status,
+          tasks: plan.tasks || [],
+          submittedAt: plan.createdAt,
+          approvedAt: plan.updatedAt,
+          completedAt: plan.status === 'completed' ? plan.updatedAt : null
+        }));
+
+        return res.json({
+          success: true,
+          dayPlans: formattedPlans
+        });
+      }
+
+      // Return all day plans for master trainer
+      const dayPlans = await DayPlan.find({})
+        .populate('assignedTrainees', 'name email employeeId')
+        .populate('trainer', 'name email')
+        .sort({ date: -1, createdAt: -1 });
+
+      return res.json({
+        success: true,
+        dayPlans
+      });
+    }
+
+    // Handle trainer requests (existing logic)
+    const trainerId = userId;
     const { status, startDate, endDate, page = 1, limit = 20 } = req.query;
 
     let query = { trainer: trainerId };

@@ -1,38 +1,7 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { cloudinary, upload } = require('../config/cloudinary');
 const User = require('../models/User');
 
-// Ensure uploads directory exists
-const uploadDir = 'uploads/demos';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer configuration with storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('video/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only video files are allowed!'), false);
-    }
-  }
-});
+// Cloudinary configuration is now in config/cloudinary.js
 
 // Upload demo
 const uploadDemo = async (req, res) => {
@@ -48,14 +17,12 @@ const uploadDemo = async (req, res) => {
 
     let fileUrl = null;
     if (req.file) {
-      // Create full URL for the uploaded file
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      fileUrl = `${baseUrl}/uploads/demos/${req.file.filename}`;
-      console.log('File uploaded successfully:');
+      // Cloudinary automatically provides the secure URL
+      fileUrl = req.file.path; // Cloudinary stores the URL in req.file.path
+      console.log('File uploaded to Cloudinary successfully:');
       console.log('Original name:', req.file.originalname);
-      console.log('Saved as:', req.file.filename);
-      console.log('File path:', req.file.path);
-      console.log('File URL:', fileUrl);
+      console.log('Cloudinary URL:', fileUrl);
+      console.log('Public ID:', req.file.filename);
     } else {
       console.log('No file uploaded');
     }
